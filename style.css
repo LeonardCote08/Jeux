@@ -1,0 +1,19 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #001a32; /* Bleu foncé */
+}
+
+#gameCanvas {
+    border: 2px solid #000;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
