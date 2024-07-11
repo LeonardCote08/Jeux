@@ -3,10 +3,11 @@ import { Level } from './level.js';
 import { Player } from './player.js';
 
 export class Game {
-    constructor(canvas, ctx, playerSprites) {
+    constructor(canvas, ctx, playerSprites, playerShadows) {
         this.canvas = canvas;
         this.ctx = ctx;
         this.playerSprites = playerSprites;
+        this.playerShadows = playerShadows;
         this.level = null;
         this.player = null;
         this.currentLevelNumber = 1;
@@ -119,11 +120,11 @@ export class Game {
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.level.draw(this.ctx);
-        this.player.draw(this.ctx, this.playerSprites);
+        this.player.draw(this.ctx, this.playerSprites, this.playerShadows);
         
         this.ctx.fillStyle = 'white';
-        this.ctx.font = '20px Arial';
-        this.ctx.fillText(`Niveau: ${this.currentLevelNumber}`, 10, 30);
+        this.ctx.font = '12px Arial'; // Réduit de 20px à 12px
+        this.ctx.fillText(`Niveau: ${this.currentLevelNumber}`, 5, 15);
 
         if (this.transitionToNextLevel) {
             this.drawTransitionScreen();

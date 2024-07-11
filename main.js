@@ -1,6 +1,6 @@
 import { CONFIG } from './config.js';
 import { Game } from './game.js';
-import { loadAssets, playerSprites } from './assetLoader.js';
+import { loadAssets, playerSprites, playerShadows } from './assetLoader.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -39,7 +39,7 @@ function gameLoop() {
 async function initGame() {
     try {
         await loadAssets();
-        game = new Game(canvas, ctx, playerSprites);
+        game = new Game(canvas, ctx, playerSprites, playerShadows);
         game.startNewGame();
         gameLoop();
     } catch (error) {

@@ -31,7 +31,7 @@ export class Player {
         if (this.isMoving) {
             this.animationCounter++;
             if (this.animationCounter >= CONFIG.animationSpeed) {
-                this.animationFrame = (this.animationFrame + 1) % 2;
+                this.animationFrame = (this.animationFrame + 1) % 3;
                 this.animationCounter = 0;
             }
         } else {
@@ -40,27 +40,33 @@ export class Player {
         }
     }
 
-    draw(ctx, playerSprites) {
+    draw(ctx, playerSprites, playerShadows) {
         const sprite = this.getSprite(playerSprites);
-        if (sprite) {
-            ctx.save();
-            if (this.direction === 'left') {
-                ctx.scale(-1, 1);
-                ctx.translate(-CONFIG.cellSize - this.x * 2, 0);
-            }
+        const shadow = this.getSprite(playerShadows);
+        if (sprite && shadow) {
+            // Draw shadow first
+            ctx.drawImage(
+                shadow,
+                this.x - CONFIG.spriteSize / 2 + CONFIG.cellSize / 2,
+                this.y - CONFIG.spriteSize / 2 + CONFIG.cellSize / 2,
+                CONFIG.spriteSize,
+                CONFIG.spriteSize
+            );
+            // Then draw player
             ctx.drawImage(
                 sprite,
-                this.x + CONFIG.hitboxReduction,
-                this.y + CONFIG.hitboxReduction,
-                CONFIG.cellSize - 2 * CONFIG.hitboxReduction,
-                CONFIG.cellSize - 2 * CONFIG.hitboxReduction
+                this.x - CONFIG.spriteSize / 2 + CONFIG.cellSize / 2,
+                this.y - CONFIG.spriteSize / 2 + CONFIG.cellSize / 2,
+                CONFIG.spriteSize,
+                CONFIG.spriteSize
             );
-            ctx.restore();
         }
     }
 
-    getSprite(playerSprites) {
-        const spriteKey = this.direction === 'left' ? 'walkRight' : `walk${this.direction.charAt(0).toUpperCase() + this.direction.slice(1)}`;
-        return playerSprites[spriteKey][this.animationFrame];
+    getSprite(spriteMap) {
+        const spriteKey = this.isMoving 
+            ? `walk${this.direction.charAt(0).toUpperCase() + this.direction.slice(1)}`
+            : this.direction;
+        return spriteMap[spriteKey][this.animationFrame];
     }
 }

@@ -5,11 +5,37 @@ export const playerSprites = {
     walkDown: [], walkUp: [], walkRight: [], walkLeft: []
 };
 
+export const playerShadows = {
+    down: [], up: [], right: [], left: [],
+    walkDown: [], walkUp: [], walkRight: [], walkLeft: []
+};
+
 const treeImages = {};
 const imageNames = ['corner_top_left', 'corner_top_right', 'trunk_left', 'trunk_right'];
 
 export async function loadAssets() {
-    await Promise.all([loadSprites(), loadTreeImages()]);
+    await Promise.all([loadPlayerSprites(), loadTreeImages()]);
+}
+async function loadPlayerSprites() {
+    const spriteSheet = await loadImage('HumanWalk.png');
+    const shadowSheet = await loadImage('ShadowHumanoidWalk.png');
+    
+    const directions = ['down', 'up', 'right', 'left'];
+    
+    directions.forEach((dir, i) => {
+        for (let j = 0; j < 4; j++) {
+            const sprite = extractSprite(spriteSheet, j, i);
+            const shadow = extractSprite(shadowSheet, j, i);
+            
+            if (j === 0) {
+                playerSprites[dir].push(sprite);
+                playerShadows[dir].push(shadow);
+            } else {
+                playerSprites[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(sprite);
+                playerShadows[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(shadow);
+            }
+        }
+    });
 }
 
 async function loadTreeImages() {
@@ -40,6 +66,19 @@ function loadImage(src) {
         img.onerror = reject;
         img.src = src;
     });
+}
+
+function extractSprite(sheet, col, row) {
+    const canvas = document.createElement('canvas');
+    canvas.width = CONFIG.spriteSize;
+    canvas.height = CONFIG.spriteSize;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(sheet, 
+        col * CONFIG.spriteSize, row * CONFIG.spriteSize, 
+        CONFIG.spriteSize, CONFIG.spriteSize, 
+        0, 0, CONFIG.spriteSize, CONFIG.spriteSize
+    );
+    return canvas;
 }
 
 export function drawTreeBlock(ctx, x, y) {
