@@ -16,27 +16,6 @@ const imageNames = ['corner_top_left', 'corner_top_right', 'trunk_left', 'trunk_
 export async function loadAssets() {
     await Promise.all([loadPlayerSprites(), loadTreeImages()]);
 }
-async function loadPlayerSprites() {
-    const spriteSheet = await loadImage('HumanWalk.png');
-    const shadowSheet = await loadImage('ShadowHumanoidWalk.png');
-    
-    const directions = ['down', 'up', 'right', 'left'];
-    
-    directions.forEach((dir, i) => {
-        for (let j = 0; j < 4; j++) {
-            const sprite = extractSprite(spriteSheet, j, i);
-            const shadow = extractSprite(shadowSheet, j, i);
-            
-            if (j === 0) {
-                playerSprites[dir].push(sprite);
-                playerShadows[dir].push(shadow);
-            } else {
-                playerSprites[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(sprite);
-                playerShadows[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(shadow);
-            }
-        }
-    });
-}
 
 async function loadTreeImages() {
     const loadPromises = imageNames.map(name => 
@@ -79,6 +58,28 @@ function extractSprite(sheet, col, row) {
         0, 0, CONFIG.spriteSize, CONFIG.spriteSize
     );
     return canvas;
+}
+
+async function loadPlayerSprites() {
+    const spriteSheet = await loadImage('Assets/player/HumanWalk.png');
+    const shadowSheet = await loadImage('Assets/player/ShadowHumanoidWalk.png');
+    
+    const directions = ['down', 'up', 'right', 'left'];
+    
+    directions.forEach((dir, i) => {
+        for (let j = 0; j < 4; j++) {
+            const sprite = extractSprite(spriteSheet, j, i);
+            const shadow = extractSprite(shadowSheet, j, i);
+            
+            if (j === 0) {
+                playerSprites[dir].push(sprite);
+                playerShadows[dir].push(shadow);
+            } else {
+                playerSprites[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(sprite);
+                playerShadows[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(shadow);
+            }
+        }
+    });
 }
 
 export function drawTreeBlock(ctx, x, y) {

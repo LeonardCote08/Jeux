@@ -40,7 +40,7 @@ export class Player {
         }
     }
 
-    draw(ctx, playerSprites, playerShadows) {
+draw(ctx, playerSprites, playerShadows) {
         const sprite = this.getSprite(playerSprites);
         const shadow = this.getSprite(playerShadows);
         if (sprite && shadow) {

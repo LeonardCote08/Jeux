@@ -19,7 +19,19 @@ export class Level {
     }
 
     initializeMaze() {
-        this.maze = Array(this.height).fill().map(() => Array(this.width).fill(1));
+        // Create the outer border
+        this.maze = Array(this.height).fill().map((_, y) => 
+            Array(this.width).fill().map((_, x) => 
+                (x === 0 || x === this.width - 1 || y === 0 || y === this.height - 1) ? 1 : 0
+            )
+        );
+
+        // Fill the interior with walls (1s)
+        for (let y = 1; y < this.height - 1; y++) {
+            for (let x = 1; x < this.width - 1; x++) {
+                this.maze[y][x] = 1;
+            }
+        }
     }
 
     carvePathways() {
@@ -123,7 +135,10 @@ export class Level {
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
                 if (this.maze[y][x] === 1) {
-                    drawTreeBlock(ctx, x, y);
+                    // Draw tree blocks only within the canvas boundaries
+                    if (x * CONFIG.cellSize < ctx.canvas.width && y * CONFIG.cellSize < ctx.canvas.height) {
+                        drawTreeBlock(ctx, x, y);
+                    }
                 }
             }
         }
