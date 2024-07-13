@@ -58,6 +58,8 @@ export class Player {
             this.jumpHeight = 0;
             this.jumpCycleComplete = true;
         }
+
+        this.animationFrame = Math.min(this.jumpFrame, 5);
     }
 
     draw(ctx, playerSprites, playerShadows) {
@@ -77,18 +79,16 @@ export class Player {
 
     getSprite(spriteMap) {
         let spriteKey;
-        let frame = this.animationFrame;
 
         if (this.isJumping) {
-            spriteKey = this.direction.includes('Left') ? 'walkUpLeft' : 'walkUpRight';
-            frame = Math.min(this.jumpFrame, 3); // Utilisez les premières frames de l'animation de marche pour le saut
+            spriteKey = `jump${this.direction.charAt(0).toUpperCase() + this.direction.slice(1)}`;
         } else if (this.isMoving) {
             spriteKey = this.getMovingSpriteKey();
         } else {
             spriteKey = this.getIdleSpriteKey();
         }
 
-        return spriteMap[spriteKey][frame] || spriteMap[spriteKey][0];
+        return spriteMap[spriteKey][this.animationFrame] || spriteMap[spriteKey][0];
     }
 
     getMovingSpriteKey() {

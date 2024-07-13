@@ -2,12 +2,14 @@ import { CONFIG } from './config.js';
 
 export const playerSprites = {
     right: [], left: [], upRight: [], upLeft: [], downRight: [], downLeft: [],
-    walkRight: [], walkLeft: [], walkUpRight: [], walkUpLeft: [], walkDownRight: [], walkDownLeft: []
+    walkRight: [], walkLeft: [], walkUpRight: [], walkUpLeft: [], walkDownRight: [], walkDownLeft: [],
+    jumpRight: [], jumpLeft: [], jumpUpRight: [], jumpUpLeft: [], jumpDownRight: [], jumpDownLeft: []
 };
 
 export const playerShadows = {
     right: [], left: [], upRight: [], upLeft: [], downRight: [], downLeft: [],
-    walkRight: [], walkLeft: [], walkUpRight: [], walkUpLeft: [], walkDownRight: [], walkDownLeft: []
+    walkRight: [], walkLeft: [], walkUpRight: [], walkUpLeft: [], walkDownRight: [], walkDownLeft: [],
+    jumpRight: [], jumpLeft: [], jumpUpRight: [], jumpUpLeft: [], jumpDownRight: [], jumpDownLeft: []
 };
 
 const treeImages = {};
@@ -28,23 +30,38 @@ async function loadTreeImages() {
 }
 
 async function loadPlayerSprites() {
-    const spriteSheet = await loadImage('Assets/player/minotaur/MinotaurWalk.png');
-    const shadowSheet = await loadImage('Assets/player/minotaur/shadows/ShadowWalk.png');
+    const walkSheet = await loadImage('Assets/player/minotaur/MinotaurWalk.png');
+    const jumpSheet = await loadImage('Assets/player/minotaur/MinotaurJump.png');
+    const shadowWalkSheet = await loadImage('Assets/player/minotaur/shadows/ShadowWalk.png');
+    const shadowJumpSheet = await loadImage('Assets/player/minotaur/shadows/ShadowJump.png');
     
     const directions = ['downRight', 'downLeft', 'upRight', 'upLeft'];
     
     directions.forEach((dir, i) => {
-        playerSprites[dir] = [extractSprite(spriteSheet, 0, i)];
-        playerShadows[dir] = [extractSprite(shadowSheet, 0, i)];
+        // Chargement des sprites de marche
+        playerSprites[dir] = [extractSprite(walkSheet, 0, i)];
+        playerShadows[dir] = [extractSprite(shadowWalkSheet, 0, i)];
         playerSprites[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
         playerShadows[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
 
         for (let j = 0; j < 6; j++) {
-            const sprite = extractSprite(spriteSheet, j, i);
-            const shadow = extractSprite(shadowSheet, j, i);
+            const sprite = extractSprite(walkSheet, j, i);
+            const shadow = extractSprite(shadowWalkSheet, j, i);
             
             playerSprites[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(sprite);
             playerShadows[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(shadow);
+        }
+
+        // Chargement des sprites de saut
+        playerSprites[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
+        playerShadows[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
+
+        for (let j = 0; j < 6; j++) {
+            const jumpSprite = extractSprite(jumpSheet, j, i);
+            const jumpShadow = extractSprite(shadowJumpSheet, j, i);
+            
+            playerSprites[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(jumpSprite);
+            playerShadows[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(jumpShadow);
         }
     });
 
@@ -53,10 +70,14 @@ async function loadPlayerSprites() {
     playerSprites.left = playerSprites.downLeft;
     playerSprites.walkRight = playerSprites.walkDownRight;
     playerSprites.walkLeft = playerSprites.walkDownLeft;
+    playerSprites.jumpRight = playerSprites.jumpDownRight;
+    playerSprites.jumpLeft = playerSprites.jumpDownLeft;
     playerShadows.right = playerShadows.downRight;
     playerShadows.left = playerShadows.downLeft;
     playerShadows.walkRight = playerShadows.walkDownRight;
     playerShadows.walkLeft = playerShadows.walkDownLeft;
+    playerShadows.jumpRight = playerShadows.jumpDownRight;
+    playerShadows.jumpLeft = playerShadows.jumpDownLeft;
 }
 
 function loadImage(src) {
