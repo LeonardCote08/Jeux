@@ -6,21 +6,43 @@ export class Player {
         this.y = y;
         this.direction = 'right';
         this.isMoving = false;
+        this.isJumping = false;
+        this.jumpHeight = 0;
+        this.maxJumpHeight = 30; // Hauteur maximale du saut en pixels
+        this.jumpSpeed = 2; // Vitesse de saut
         this.animationFrame = 0;
         this.lastFrameTime = 0;
-        this.frameDuration = 400; // Durée d'une frame en millisecondes
+        this.frameDuration = 200; // Durée d'une frame en millisecondes
         this.totalFrames = 6; // Nombre total de frames dans l'animation
+        this.jumpFrame = 0;
+    }
+
+    jump() {
+        if (!this.isJumping) {
+            this.isJumping = true;
+            this.jumpFrame = 0;
+        }
     }
 
     updateAnimation(currentTime) {
-        if (this.isMoving) {
-            const elapsed = currentTime - this.lastFrameTime;
-            if (elapsed >= this.frameDuration) {
+        const elapsed = currentTime - this.lastFrameTime;
+        if (elapsed >= this.frameDuration) {
+            if (this.isJumping) {
+                this.jumpFrame = (this.jumpFrame + 1) % 4;
+                if (this.jumpFrame < 2) {
+                    this.jumpHeight += this.jumpSpeed;
+                } else {
+                    this.jumpHeight -= this.jumpSpeed;
+                }
+                if (this.jumpFrame === 0 && this.jumpHeight <= 0) {
+                    this.isJumping = false;
+                    this.jumpHeight = 0;
+                }
+            } else if (this.isMoving) {
                 this.animationFrame = (this.animationFrame + 1) % this.totalFrames;
-                this.lastFrameTime = currentTime;
+            } else {
+                this.animationFrame = 0;
             }
-        } else {
-            this.animationFrame = 0;
             this.lastFrameTime = currentTime;
         }
     }
@@ -30,10 +52,10 @@ export class Player {
         const shadow = this.getSprite(playerShadows);
         
         const drawX = Math.round(this.x - (CONFIG.spriteSize - CONFIG.cellSize) / 2);
-        const drawY = Math.round(this.y - (CONFIG.spriteSize - CONFIG.cellSize) / 2);
+        const drawY = Math.round(this.y - (CONFIG.spriteSize - CONFIG.cellSize) / 2 - this.jumpHeight);
 
         if (shadow) {
-            ctx.drawImage(shadow, drawX, drawY, CONFIG.spriteSize, CONFIG.spriteSize);
+            ctx.drawImage(shadow, drawX, drawY + this.jumpHeight, CONFIG.spriteSize, CONFIG.spriteSize);
         }
         if (sprite) {
             ctx.drawImage(sprite, drawX, drawY, CONFIG.spriteSize, CONFIG.spriteSize);
@@ -44,7 +66,7 @@ export class Player {
         ctx.strokeStyle = 'red';
         ctx.strokeRect(
             this.x + hitboxOffset, 
-            this.y + hitboxOffset, 
+            this.y + hitboxOffset - this.jumpHeight, 
             CONFIG.playerHitboxSize, 
             CONFIG.playerHitboxSize
         );
@@ -52,7 +74,10 @@ export class Player {
 
     getSprite(spriteMap) {
         let spriteKey;
-        if (this.isMoving) {
+        if (this.isJumping) {
+            spriteKey = this.direction === 'left' ? 'jumpLeft' : 'jumpRight';
+            return spriteMap[spriteKey][this.jumpFrame + 1]; // +1 car la première frame est la position neutre
+        } else if (this.isMoving) {
             switch(this.direction) {
                 case 'right':
                     spriteKey = 'walkRight';

@@ -68,7 +68,9 @@ function extractSprite(sheet, col, row) {
 
 async function loadPlayerSprites() {
     const spriteSheet = await loadImage('Assets/player/minotaur/MinotaurWalk.png');
-    const shadowSheet = await loadImage('Assets/player/minotaur/ShadowWalk.png');
+    const shadowSheet = await loadImage('Assets/player/minotaur/shadows/ShadowWalk.png');
+    const jumpSheet = await loadImage('Assets/player/minotaur/MinotaurJump.png');
+    const jumpShadowSheet = await loadImage('Assets/player/minotaur/shadows/ShadowJump.png');
     
     const directions = ['right', 'left', 'upRight', 'upLeft'];
     
@@ -90,6 +92,24 @@ async function loadPlayerSprites() {
             playerShadows[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(shadow);
         }
     });
+
+    // Chargement des sprites de saut
+    playerSprites.jumpRight = [];
+    playerSprites.jumpLeft = [];
+    playerShadows.jumpRight = [];
+    playerShadows.jumpLeft = [];
+
+    for (let j = 0; j < 6; j++) {
+        const jumpSpriteRight = extractSprite(jumpSheet, j, 0);
+        const jumpSpriteLeft = extractSprite(jumpSheet, j, 1);
+        const jumpShadowRight = extractSprite(jumpShadowSheet, j, 0);
+        const jumpShadowLeft = extractSprite(jumpShadowSheet, j, 1);
+
+        playerSprites.jumpRight.push(jumpSpriteRight);
+        playerSprites.jumpLeft.push(jumpSpriteLeft);
+        playerShadows.jumpRight.push(jumpShadowRight);
+        playerShadows.jumpLeft.push(jumpShadowLeft);
+    }
 }
 
 export function drawTreeBlock(ctx, x, y) {

@@ -18,6 +18,10 @@ function handleKeyDown(e) {
     if (['arrowright', 'd'].includes(key)) keysPressed.add('right');
     if (['arrowup', 'w'].includes(key)) keysPressed.add('up');
     if (['arrowdown', 's'].includes(key)) keysPressed.add('down');
+    if (key === ' ') {
+        e.preventDefault(); // Empêche le défilement de la page
+        game.player.jump();
+    }
 }
 
 function handleKeyUp(e) {
