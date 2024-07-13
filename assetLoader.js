@@ -14,8 +14,8 @@ export const playerShadows = {
     idleRight: [], idleLeft: [], idleUpRight: [], idleUpLeft: [], idleDownRight: [], idleDownLeft: []
 };
 
-const treeImages = {};
-const imageNames = ['corner_top_left', 'corner_top_right', 'trunk_left', 'trunk_right'];
+let treeImage;
+let treeShadowImage;
 
 export let grassTexture;
 
@@ -24,11 +24,8 @@ export async function loadAssets() {
 }
 
 async function loadTreeImages() {
-    const loadPromises = imageNames.map(name => 
-        loadImage(`Assets/sprites_decoupes_arbres/${name}.png`)
-            .then(img => treeImages[name] = img)
-    );
-    await Promise.all(loadPromises);
+    treeImage = await loadImage('Assets/props/SingleTree.png');
+    treeShadowImage = await loadImage('Assets/props/shadows/SingleTreeShadow.png');
 }
 
 async function loadPlayerSprites() {
@@ -126,16 +123,13 @@ async function loadGrassTexture() {
 }
 
 export function drawTreeBlock(ctx, x, y) {
-    imageNames.forEach((type, i) => {
-        const img = treeImages[type];
-        if (img) {
-            ctx.drawImage(
-                img,
-                x * CONFIG.cellSize + (i % 2) * (CONFIG.cellSize / 2),
-                y * CONFIG.cellSize + Math.floor(i / 2) * (CONFIG.cellSize / 2),
-                CONFIG.cellSize / 2,
-                CONFIG.cellSize / 2
-            );
-        }
-    });
+    const drawX = x * CONFIG.cellSize;
+    const drawY = y * CONFIG.cellSize;
+    const size = CONFIG.cellSize;
+
+    // Dessiner l'ombre de l'arbre
+    ctx.drawImage(treeShadowImage, drawX, drawY, size, size);
+    
+    // Dessiner l'arbre
+    ctx.drawImage(treeImage, drawX, drawY, size, size);
 }

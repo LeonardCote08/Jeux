@@ -135,7 +135,7 @@ export class Level {
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
                 if (this.maze[y][x] === 1) {
-                    // Draw tree blocks only within the canvas boundaries
+                    // Dessin d'un arbre unique de 32x32 pixels avec son ombre
                     if (x * CONFIG.cellSize < ctx.canvas.width && y * CONFIG.cellSize < ctx.canvas.height) {
                         drawTreeBlock(ctx, x, y);
                     }

@@ -1,5 +1,5 @@
 export const CONFIG = {
-    cellSize: 30,
+    cellSize: 32, // Ajusté pour correspondre à la nouvelle taille de l'arbre
     gridWidth: 19,
     gridHeight: 19,
     treeDensity: 0.4,
@@ -7,5 +7,5 @@ export const CONFIG = {
     animationSpeed: 5,
     minEntranceExitDistance: 15,
     spriteSize: 64,
-    playerHitboxSize: 20  // Nouvelle propriété pour la taille de la hitbox du joueur
+    playerHitboxSize: 20
 };
