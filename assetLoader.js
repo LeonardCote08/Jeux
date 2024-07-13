@@ -13,8 +13,10 @@ export const playerShadows = {
 const treeImages = {};
 const imageNames = ['corner_top_left', 'corner_top_right', 'trunk_left', 'trunk_right'];
 
+export let grassTexture; // Nouvelle variable pour stocker la texture d'herbe
+
 export async function loadAssets() {
-    await Promise.all([loadPlayerSprites(), loadTreeImages()]);
+    await Promise.all([loadPlayerSprites(), loadTreeImages(), loadGrassTexture()]);
 }
 
 async function loadTreeImages() {
@@ -83,6 +85,10 @@ function extractSprite(sheet, col, row) {
         CONFIG.spriteSize, CONFIG.spriteSize
     );
     return canvas;
+}
+
+async function loadGrassTexture() {
+    grassTexture = await loadImage('Assets/GrassTexture.png');
 }
 
 export function drawTreeBlock(ctx, x, y) {

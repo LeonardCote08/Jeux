@@ -1,6 +1,7 @@
 import { CONFIG } from './config.js';
 import { Level } from './level.js';
 import { Player } from './player.js';
+import { grassTexture } from './assetLoader.js';
 
 export class Game {
     constructor(canvas, ctx, playerSprites, playerShadows) {
@@ -94,9 +95,22 @@ export class Game {
         return this.player.direction; // Garder la direction actuelle si aucun mouvement
     }
 
+    drawBackground() {
+        const pattern = this.ctx.createPattern(grassTexture, 'repeat');
+        this.ctx.fillStyle = pattern;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Dessiner le fond texturé
+        this.drawBackground();
+        
+        // Dessiner le labyrinthe
         this.level.draw(this.ctx);
+        
+        // Dessiner le joueur
         this.player.draw(this.ctx, this.playerSprites, this.playerShadows);
         
         // Afficher le numéro du niveau

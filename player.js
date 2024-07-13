@@ -80,8 +80,8 @@ export class Player {
         let frame = this.animationFrame;
 
         if (this.isJumping) {
-            spriteKey = this.direction === 'left' ? 'jumpLeft' : 'jumpRight';
-            frame = Math.min(this.jumpFrame, 4); // Assurez-vous que frame ne dépasse pas 4
+            spriteKey = this.direction.includes('Left') ? 'walkUpLeft' : 'walkUpRight';
+            frame = Math.min(this.jumpFrame, 3); // Utilisez les premières frames de l'animation de marche pour le saut
         } else if (this.isMoving) {
             spriteKey = this.getMovingSpriteKey();
         } else {
