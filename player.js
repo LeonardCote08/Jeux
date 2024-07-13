@@ -4,12 +4,11 @@ export class Player {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.direction = 'down';
+        this.direction = 'right';
         this.isMoving = false;
         this.animationFrame = 0;
-        this.animationCounter = 0;
-        this.frameDuration = 200; // Durée d'une frame en millisecondes
         this.lastFrameTime = 0;
+        this.frameDuration = 400; // Durée d'une frame en millisecondes
         this.totalFrames = 6; // Nombre total de frames dans l'animation
     }
 
@@ -17,13 +16,10 @@ export class Player {
         if (this.isMoving) {
             const elapsed = currentTime - this.lastFrameTime;
             if (elapsed >= this.frameDuration) {
-                // Calculer combien de frames doivent être avancées
-                const framesToAdvance = Math.floor(elapsed / this.frameDuration);
-                this.animationFrame = (this.animationFrame + framesToAdvance) % this.totalFrames;
-                this.lastFrameTime = currentTime - (elapsed % this.frameDuration);
+                this.animationFrame = (this.animationFrame + 1) % this.totalFrames;
+                this.lastFrameTime = currentTime;
             }
         } else {
-            // Réinitialiser à la première frame quand immobile
             this.animationFrame = 0;
             this.lastFrameTime = currentTime;
         }
@@ -56,17 +52,34 @@ export class Player {
 
     getSprite(spriteMap) {
         let spriteKey;
-        switch(this.direction) {
-            case 'right':
-            case 'left':
-                spriteKey = this.isMoving ? `walk${this.direction.charAt(0).toUpperCase() + this.direction.slice(1)}` : this.direction;
-                break;
-            case 'up':
-                spriteKey = this.isMoving ? 'walkUpRight' : 'upRight';
-                break;
-            case 'down':
-                spriteKey = this.isMoving ? 'walkRight' : 'right';
-                break;
+        if (this.isMoving) {
+            switch(this.direction) {
+                case 'right':
+                    spriteKey = 'walkRight';
+                    break;
+                case 'left':
+                    spriteKey = 'walkLeft';
+                    break;
+                case 'up':
+                    spriteKey = 'walkUpRight';
+                    break;
+                case 'down':
+                    spriteKey = 'walkRight';
+                    break;
+            }
+        } else {
+            switch(this.direction) {
+                case 'right':
+                case 'down':
+                    spriteKey = 'right';
+                    break;
+                case 'left':
+                    spriteKey = 'left';
+                    break;
+                case 'up':
+                    spriteKey = 'upRight';
+                    break;
+            }
         }
         return spriteMap[spriteKey][this.animationFrame];
     }

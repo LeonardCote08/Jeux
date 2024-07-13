@@ -73,6 +73,11 @@ async function loadPlayerSprites() {
     const directions = ['right', 'left', 'upRight', 'upLeft'];
     
     directions.forEach((dir, i) => {
+        playerSprites[dir] = [];
+        playerShadows[dir] = [];
+        playerSprites[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
+        playerShadows[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
+
         for (let j = 0; j < 6; j++) {
             const sprite = extractSprite(spriteSheet, j, i);
             const shadow = extractSprite(shadowSheet, j, i);
@@ -80,10 +85,9 @@ async function loadPlayerSprites() {
             if (j === 0) {
                 playerSprites[dir].push(sprite);
                 playerShadows[dir].push(shadow);
-            } else {
-                playerSprites[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(sprite);
-                playerShadows[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(shadow);
             }
+            playerSprites[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(sprite);
+            playerShadows[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(shadow);
         }
     });
 }

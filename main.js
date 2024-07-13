@@ -4,8 +4,11 @@ import { loadAssets, playerSprites, playerShadows } from './assetLoader.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+
 canvas.width = CONFIG.cellSize * CONFIG.gridWidth;
 canvas.height = CONFIG.cellSize * CONFIG.gridHeight;
+
+ctx.imageSmoothingEnabled = false;
 
 const keysPressed = new Set();
 
@@ -15,8 +18,6 @@ function handleKeyDown(e) {
     if (['arrowright', 'd'].includes(key)) keysPressed.add('right');
     if (['arrowup', 'w'].includes(key)) keysPressed.add('up');
     if (['arrowdown', 's'].includes(key)) keysPressed.add('down');
-    console.log('Key pressed:', key); // Log pour le débogage
-    console.log('Keys currently pressed:', Array.from(keysPressed)); // Log pour le débogage
 }
 
 function handleKeyUp(e) {
@@ -25,7 +26,6 @@ function handleKeyUp(e) {
     if (['arrowright', 'd'].includes(key)) keysPressed.delete('right');
     if (['arrowup', 'w'].includes(key)) keysPressed.delete('up');
     if (['arrowdown', 's'].includes(key)) keysPressed.delete('down');
-    console.log('Key released:', key); // Log pour le débogage
 }
 
 document.addEventListener('keydown', handleKeyDown);
@@ -39,16 +39,14 @@ function gameLoop(currentTime) {
     requestAnimationFrame(gameLoop);
 }
 
-requestAnimationFrame(gameLoop);
-
 async function initGame() {
     try {
         await loadAssets();
         game = new Game(canvas, ctx, playerSprites, playerShadows);
         game.startNewGame();
-        gameLoop();
+        requestAnimationFrame(gameLoop);
     } catch (error) {
-        console.error("Error initializing game:", error);
+        console.error("Erreur lors de l'initialisation du jeu:", error);
     }
 }
 
