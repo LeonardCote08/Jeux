@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { drawTreeBlock } from './assetLoader.js';
+import { drawTreeBlock, drawFlower } from './assetLoader.js';
 
 export class Level {
     constructor(width, height, entrancePos = null) {
@@ -8,6 +8,7 @@ export class Level {
         this.maze = [];
         this.entrance = entrancePos || this.getRandomBorderPosition();
         this.exit = null; // We'll set this later
+        this.flowers = [];
     }
 
     generate() {
@@ -16,6 +17,7 @@ export class Level {
         this.openEntranceAndExit();
         this.ensureEntrancePathway();
         this.ensureExitPathway();
+        this.addRandomFlowers();
     }
 
     initializeMaze() {
@@ -30,6 +32,20 @@ export class Level {
         for (let y = 1; y < this.height - 1; y++) {
             for (let x = 1; x < this.width - 1; x++) {
                 this.maze[y][x] = 1;
+            }
+        }
+    }
+
+    addRandomFlowers() {
+        const flowerTypes = ['FleurBlanche', 'FleurMauve', 'FleurRouge'];
+        const flowerDensity = 0.05; // Ajustez cette valeur pour plus ou moins de fleurs
+
+        for (let y = 1; y < this.height - 1; y++) {
+            for (let x = 1; x < this.width - 1; x++) {
+                if (this.maze[y][x] === 0 && Math.random() < flowerDensity) {
+                    const flowerType = flowerTypes[Math.floor(Math.random() * flowerTypes.length)];
+                    this.flowers.push({ x, y, type: flowerType });
+                }
             }
         }
     }
@@ -135,12 +151,16 @@ export class Level {
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
                 if (this.maze[y][x] === 1) {
-                    // Dessin d'un arbre unique de 32x32 pixels avec son ombre
                     if (x * CONFIG.cellSize < ctx.canvas.width && y * CONFIG.cellSize < ctx.canvas.height) {
                         drawTreeBlock(ctx, x, y);
                     }
                 }
             }
+        }
+
+        // Dessiner les fleurs
+        for (let flower of this.flowers) {
+            drawFlower(ctx, flower.x, flower.y, flower.type);
         }
     }
 }

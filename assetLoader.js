@@ -16,16 +16,29 @@ export const playerShadows = {
 
 let treeImage;
 let treeShadowImage;
+let flowerImages = {};
 
 export let grassTexture;
 
 export async function loadAssets() {
-    await Promise.all([loadPlayerSprites(), loadTreeImages(), loadGrassTexture()]);
+    await Promise.all([
+        loadPlayerSprites(),
+        loadTreeImages(),
+        loadFlowerImages(),
+        loadGrassTexture()
+    ]);
 }
 
 async function loadTreeImages() {
     treeImage = await loadImage('Assets/props/SingleTree.png');
     treeShadowImage = await loadImage('Assets/props/shadows/SingleTreeShadow.png');
+}
+
+async function loadFlowerImages() {
+    const flowerTypes = ['FleurBlanche', 'FleurMauve', 'FleurRouge'];
+    for (let type of flowerTypes) {
+        flowerImages[type] = await loadImage(`Assets/props/fleurs/${type}.png`);
+    }
 }
 
 async function loadPlayerSprites() {
@@ -132,4 +145,12 @@ export function drawTreeBlock(ctx, x, y) {
     
     // Dessiner l'arbre
     ctx.drawImage(treeImage, drawX, drawY, size, size);
+}
+
+export function drawFlower(ctx, x, y, flowerType) {
+    const drawX = x * CONFIG.cellSize;
+    const drawY = y * CONFIG.cellSize;
+    const size = CONFIG.cellSize;
+
+    ctx.drawImage(flowerImages[flowerType], drawX, drawY, size, size);
 }
