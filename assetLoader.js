@@ -1,13 +1,13 @@
 import { CONFIG } from './config.js';
 
 export const playerSprites = {
-    down: [], up: [], right: [], left: [],
-    walkDown: [], walkUp: [], walkRight: [], walkLeft: []
+    right: [], left: [], upRight: [], upLeft: [],
+    walkRight: [], walkLeft: [], walkUpRight: [], walkUpLeft: []
 };
 
 export const playerShadows = {
-    down: [], up: [], right: [], left: [],
-    walkDown: [], walkUp: [], walkRight: [], walkLeft: []
+    right: [], left: [], upRight: [], upLeft: [],
+    walkRight: [], walkLeft: [], walkUpRight: [], walkUpLeft: []
 };
 
 const treeImages = {};
@@ -52,22 +52,28 @@ function extractSprite(sheet, col, row) {
     canvas.width = CONFIG.spriteSize;
     canvas.height = CONFIG.spriteSize;
     const ctx = canvas.getContext('2d');
+    
+    const spriteWidth = 32;  // Largeur d'un sprite dans la feuille
+    const spriteHeight = 32; // Hauteur d'un sprite dans la feuille
+    
+    ctx.imageSmoothingEnabled = false;
     ctx.drawImage(sheet, 
-        col * CONFIG.spriteSize, row * CONFIG.spriteSize, 
-        CONFIG.spriteSize, CONFIG.spriteSize, 
-        0, 0, CONFIG.spriteSize, CONFIG.spriteSize
+        col * spriteWidth, row * spriteHeight,
+        spriteWidth, spriteHeight,
+        0, 0,
+        CONFIG.spriteSize, CONFIG.spriteSize
     );
     return canvas;
 }
 
 async function loadPlayerSprites() {
-    const spriteSheet = await loadImage('Assets/player/HumanWalk.png');
-    const shadowSheet = await loadImage('Assets/player/ShadowHumanoidWalk.png');
+    const spriteSheet = await loadImage('Assets/player/minotaur/MinotaurWalk.png');
+    const shadowSheet = await loadImage('Assets/player/minotaur/ShadowWalk.png');
     
-    const directions = ['down', 'up', 'right', 'left'];
+    const directions = ['right', 'left', 'upRight', 'upLeft'];
     
     directions.forEach((dir, i) => {
-        for (let j = 0; j < 4; j++) {
+        for (let j = 0; j < 6; j++) {
             const sprite = extractSprite(spriteSheet, j, i);
             const shadow = extractSprite(shadowSheet, j, i);
             

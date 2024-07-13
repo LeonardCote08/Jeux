@@ -11,8 +11,6 @@ export class Game {
         this.level = null;
         this.player = null;
         this.currentLevelNumber = 1;
-        this.transitionToNextLevel = false;
-        this.transitionTimer = 0;
     }
 
     startNewGame() {
@@ -27,41 +25,11 @@ export class Game {
         const playerStartX = this.level.entrance.x * CONFIG.cellSize;
         const playerStartY = this.level.entrance.y * CONFIG.cellSize;
         this.player = new Player(playerStartX, playerStartY);
-        
-        this.transitionToNextLevel = false;
-        this.transitionTimer = 0;
     }
 
-    update(keysPressed) {
-        if (this.transitionToNextLevel) {
-            this.transitionTimer++;
-            if (this.transitionTimer > 60) {  // 1 second at 60 FPS
-                this.currentLevelNumber++;
-                const nextEntrancePos = this.getOppositePosition(this.level.exit);
-                this.generateNewLevel(nextEntrancePos);
-            }
-            return;
-        }
-
+    update(keysPressed, currentTime) {
         this.movePlayer(keysPressed);
-        this.player.updateAnimation();
-        this.checkLevelCompletion();
-    }
-
-    getOppositePosition(pos) {
-        return {
-            x: pos.x === 0 ? CONFIG.gridWidth - 1 : (pos.x === CONFIG.gridWidth - 1 ? 0 : pos.x),
-            y: pos.y === 0 ? CONFIG.gridHeight - 1 : (pos.y === CONFIG.gridHeight - 1 ? 0 : pos.y)
-        };
-    }
-
-    checkLevelCompletion() {
-        const playerCellX = Math.floor(this.player.x / CONFIG.cellSize);
-        const playerCellY = Math.floor(this.player.y / CONFIG.cellSize);
-        
-        if (playerCellX === this.level.exit.x && playerCellY === this.level.exit.y) {
-            this.transitionToNextLevel = true;
-        }
+        this.player.updateAnimation(currentTime);
     }
 
     movePlayer(keysPressed) {
@@ -73,48 +41,52 @@ export class Game {
         if (keysPressed.has('up')) dy -= speed;
         if (keysPressed.has('down')) dy += speed;
 
-        if (dx !== 0 && dy !== 0) {
-            dx *= Math.SQRT1_2;
-            dy *= Math.SQRT1_2;
-        }
-
         let newX = this.player.x + dx;
         let newY = this.player.y + dy;
 
-        if (!this.checkCollision(newX, this.player.y)) {
+        // Vérifier les collisions avec une hitbox plus petite
+        if (!this.checkCollision(newX, this.player.y, CONFIG.playerHitboxSize)) {
             this.player.x = newX;
         }
-        if (!this.checkCollision(this.player.x, newY)) {
+        if (!this.checkCollision(this.player.x, newY, CONFIG.playerHitboxSize)) {
             this.player.y = newY;
         }
 
-        this.player.move(this.player.x - this.player.x, this.player.y - this.player.y);
+        this.player.isMoving = (dx !== 0 || dy !== 0);
+        if (this.player.isMoving) {
+            this.player.direction = this.getPlayerDirection(dx, dy);
+        }
+        if (dx > 0) this.player.direction = 'right';
+        else if (dx < 0) this.player.direction = 'left';
+        else if (dy < 0) this.player.direction = 'up';
+        else if (dy > 0) this.player.direction = 'down';
     }
 
-    checkCollision(x, y) {
-        const playerSize = CONFIG.cellSize - 2 * CONFIG.hitboxReduction;
-        if (x < 0 || y < 0 || x + playerSize > this.level.width * CONFIG.cellSize || y + playerSize > this.level.height * CONFIG.cellSize) {
-            return true;
-        }
+    checkCollision(x, y, hitboxSize) {
+        const hitboxOffset = (CONFIG.cellSize - hitboxSize) / 2;
+        const left = Math.floor((x + hitboxOffset) / CONFIG.cellSize);
+        const top = Math.floor((y + hitboxOffset) / CONFIG.cellSize);
+        const right = Math.floor((x + hitboxOffset + hitboxSize - 1) / CONFIG.cellSize);
+        const bottom = Math.floor((y + hitboxOffset + hitboxSize - 1) / CONFIG.cellSize);
 
-        const topLeftCell = {
-            x: Math.floor((x + CONFIG.hitboxReduction) / CONFIG.cellSize),
-            y: Math.floor((y + CONFIG.hitboxReduction) / CONFIG.cellSize)
-        };
-        const bottomRightCell = {
-            x: Math.floor((x + playerSize - 1) / CONFIG.cellSize),
-            y: Math.floor((y + playerSize - 1) / CONFIG.cellSize)
-        };
-
-        for (let cellY = topLeftCell.y; cellY <= bottomRightCell.y; cellY++) {
-            for (let cellX = topLeftCell.x; cellX <= bottomRightCell.x; cellX++) {
-                if (this.level.maze[cellY][cellX] === 1) {
-                    return true;
+        for (let cellY = top; cellY <= bottom; cellY++) {
+            for (let cellX = left; cellX <= right; cellX++) {
+                if (cellY < 0 || cellY >= this.level.maze.length || 
+                    cellX < 0 || cellX >= this.level.maze[0].length ||
+                    this.level.maze[cellY][cellX] === 1) {
+                    return true; // Collision détectée
                 }
             }
         }
+        return false; // Pas de collision
+    }
 
-        return false;
+    getPlayerDirection(dx, dy) {
+        if (Math.abs(dx) > Math.abs(dy)) {
+            return dx > 0 ? 'right' : 'left';
+        } else {
+            return dy > 0 ? 'down' : 'up';
+        }
     }
 
     draw() {
@@ -123,22 +95,7 @@ export class Game {
         this.player.draw(this.ctx, this.playerSprites, this.playerShadows);
         
         this.ctx.fillStyle = 'white';
-        this.ctx.font = '12px Arial'; // Réduit de 20px à 12px
+        this.ctx.font = '12px Arial';
         this.ctx.fillText(`Niveau: ${this.currentLevelNumber}`, 5, 15);
-
-        if (this.transitionToNextLevel) {
-            this.drawTransitionScreen();
-        }
-    }
-
-    drawTransitionScreen() {
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.fillStyle = 'white';
-        this.ctx.font = '30px Arial';
-        this.ctx.textAlign = 'center';
-        this.ctx.fillText(`Niveau ${this.currentLevelNumber} terminé !`, this.canvas.width / 2, this.canvas.height / 2);
-        this.ctx.fillText(`Préparation du niveau ${this.currentLevelNumber + 1}...`, this.canvas.width / 2, this.canvas.height / 2 + 40);
-        this.ctx.textAlign = 'left';
     }
 }
