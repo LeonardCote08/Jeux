@@ -5,6 +5,7 @@ export class Player {
         this.x = x;
         this.y = y;
         this.direction = 'downRight';
+        this.lastHorizontalDirection = 'Right'; // Nouvelle propriété
         this.isMoving = false;
         this.isJumping = false;
         this.jumpHeight = 0;
@@ -22,6 +23,10 @@ export class Player {
         this.jumpCycleComplete = false;
         this.lastMoveTime = 0;
         this.idleThreshold = 1000; // 1 seconde sans mouvement pour passer en idle
+        this.idleCycleComplete = false;
+        this.idlePauseDuration = 2000; // 2 secondes de pause entre les cycles idle
+        this.lastIdleCycleTime = 0;
+        
     }
 
     jump() {
@@ -30,6 +35,25 @@ export class Player {
             this.jumpFrame = 0;
             this.jumpCycleComplete = false;
         }
+    }
+
+    updateDirection(dx, dy) {
+        if (dx !== 0 || dy !== 0) {
+            if (dx > 0) {
+                this.lastHorizontalDirection = 'Right';
+            } else if (dx < 0) {
+                this.lastHorizontalDirection = 'Left';
+            }
+
+            if (dy < 0) {
+                this.direction = 'up' + this.lastHorizontalDirection;
+            } else if (dy > 0) {
+                this.direction = 'down' + this.lastHorizontalDirection;
+            } else {
+                this.direction = this.lastHorizontalDirection.toLowerCase();
+            }
+        }
+        // Si dx et dy sont tous deux 0, nous conservons la dernière direction
     }
 
     updateAnimation(currentTime) {
@@ -41,14 +65,33 @@ export class Player {
                 this.updateJumpAnimation();
             } else if (this.isMoving) {
                 this.animationFrame = (this.animationFrame + 1) % this.totalFrames.walk;
-                this.lastMoveTime = currentTime;
+                this.idleCycleComplete = false;
+                this.lastIdleCycleTime = 0;
             } else {
-                if (currentTime - this.lastMoveTime > this.idleThreshold) {
-                    // Passage en animation idle
-                    this.animationFrame = (this.animationFrame + 1) % this.totalFrames.idle;
-                } else {
-                    // Reste sur la première frame de l'animation de marche
+                this.updateIdleAnimation(currentTime);
+            }
+        }
+    }
+
+    updateIdleAnimation(currentTime) {
+        if (currentTime - this.lastMoveTime <= this.idleThreshold) {
+            // Reste sur la première frame de l'animation de marche
+            this.animationFrame = 0;
+            this.idleCycleComplete = false;
+            this.lastIdleCycleTime = 0;
+        } else {
+            if (this.idleCycleComplete) {
+                if (currentTime - this.lastIdleCycleTime >= this.idlePauseDuration) {
+                    // Redémarrer le cycle idle
+                    this.idleCycleComplete = false;
                     this.animationFrame = 0;
+                }
+            } else {
+                this.animationFrame = (this.animationFrame + 1) % this.totalFrames.idle;
+                if (this.animationFrame === 0) {
+                    // Cycle idle complet
+                    this.idleCycleComplete = true;
+                    this.lastIdleCycleTime = currentTime;
                 }
             }
         }
@@ -109,6 +152,7 @@ export class Player {
     }
 
     getIdleSpriteKey() {
+        // Utiliser la direction complète pour l'animation idle
         return `idle${this.direction.charAt(0).toUpperCase() + this.direction.slice(1)}`;
     }
 }

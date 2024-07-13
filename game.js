@@ -80,7 +80,7 @@ export class Game {
         this.player.isMoving = (dx !== 0 || dy !== 0);
         if (this.player.isMoving) {
             this.player.lastMoveTime = performance.now();
-            this.player.direction = this.getPlayerDirection(dx, dy);
+            this.player.updateDirection(dx, dy);
         }
     }
 
