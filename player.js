@@ -12,7 +12,7 @@ export class Player {
         this.jumpSpeed = 2; // Vitesse de saut
         this.animationFrame = 0;
         this.lastFrameTime = 0;
-        this.frameDuration = 200; // Durée d'une frame en millisecondes
+        this.frameDuration = 100; // Durée d'une frame en millisecondes
         this.totalFrames = 6; // Nombre total de frames dans l'animation
         this.jumpFrame = 0;
     }
@@ -61,15 +61,7 @@ export class Player {
             ctx.drawImage(sprite, drawX, drawY, CONFIG.spriteSize, CONFIG.spriteSize);
         }
 
-        // Dessiner la hitbox du joueur (pour le débogage)
-        const hitboxOffset = (CONFIG.cellSize - CONFIG.playerHitboxSize) / 2;
-        ctx.strokeStyle = 'red';
-        ctx.strokeRect(
-            this.x + hitboxOffset, 
-            this.y + hitboxOffset - this.jumpHeight, 
-            CONFIG.playerHitboxSize, 
-            CONFIG.playerHitboxSize
-        );
+        // La partie de dessin de la hitbox a été retirée
     }
 
     getSprite(spriteMap) {
