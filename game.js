@@ -11,6 +11,7 @@ export class Game {
         this.level = null;
         this.player = null;
         this.currentLevelNumber = 1;
+        this.lastUpdateTime = 0;
     }
 
     startNewGame() {
@@ -28,12 +29,15 @@ export class Game {
     }
 
     update(keysPressed, currentTime) {
-        this.movePlayer(keysPressed);
+        const deltaTime = currentTime - this.lastUpdateTime;
+        this.lastUpdateTime = currentTime;
+
+        this.movePlayer(keysPressed, deltaTime);
         this.player.updateAnimation(currentTime);
     }
 
-    movePlayer(keysPressed) {
-        const speed = CONFIG.playerSpeed;
+    movePlayer(keysPressed, deltaTime) {
+        const speed = (CONFIG.playerSpeed * deltaTime) / 16;
         let dx = 0, dy = 0;
 
         if (keysPressed.has('left')) dx -= speed;
@@ -41,14 +45,14 @@ export class Game {
         if (keysPressed.has('up')) dy -= speed;
         if (keysPressed.has('down')) dy += speed;
 
-        let newX = this.player.x + dx;
-        let newY = this.player.y + dy;
+        // Vérifier les collisions et ajuster la position
+        const newX = this.player.x + dx;
+        const newY = this.player.y + dy;
 
-        // Vérifier les collisions avec une hitbox plus petite
-        if (!this.checkCollision(newX, this.player.y, CONFIG.playerHitboxSize)) {
+        if (!this.checkCollision(newX, this.player.y)) {
             this.player.x = newX;
         }
-        if (!this.checkCollision(this.player.x, newY, CONFIG.playerHitboxSize)) {
+        if (!this.checkCollision(this.player.x, newY)) {
             this.player.y = newY;
         }
 
@@ -56,13 +60,10 @@ export class Game {
         if (this.player.isMoving) {
             this.player.direction = this.getPlayerDirection(dx, dy);
         }
-        if (dx > 0) this.player.direction = 'right';
-        else if (dx < 0) this.player.direction = 'left';
-        else if (dy < 0) this.player.direction = 'up';
-        else if (dy > 0) this.player.direction = 'down';
     }
 
-    checkCollision(x, y, hitboxSize) {
+    checkCollision(x, y) {
+        const hitboxSize = CONFIG.playerHitboxSize;
         const hitboxOffset = (CONFIG.cellSize - hitboxSize) / 2;
         const left = Math.floor((x + hitboxOffset) / CONFIG.cellSize);
         const top = Math.floor((y + hitboxOffset) / CONFIG.cellSize);
@@ -82,11 +83,15 @@ export class Game {
     }
 
     getPlayerDirection(dx, dy) {
-        if (Math.abs(dx) > Math.abs(dy)) {
-            return dx > 0 ? 'right' : 'left';
-        } else {
-            return dy > 0 ? 'down' : 'up';
-        }
+        if (dx > 0 && dy > 0) return 'downRight';
+        if (dx < 0 && dy > 0) return 'downLeft';
+        if (dx > 0 && dy < 0) return 'upRight';
+        if (dx < 0 && dy < 0) return 'upLeft';
+        if (dx > 0) return 'downRight';
+        if (dx < 0) return 'downLeft';
+        if (dy > 0) return 'downRight';
+        if (dy < 0) return 'upRight';
+        return this.player.direction; // Garder la direction actuelle si aucun mouvement
     }
 
     draw() {
@@ -94,6 +99,7 @@ export class Game {
         this.level.draw(this.ctx);
         this.player.draw(this.ctx, this.playerSprites, this.playerShadows);
         
+        // Afficher le numéro du niveau
         this.ctx.fillStyle = 'white';
         this.ctx.font = '12px Arial';
         this.ctx.fillText(`Niveau: ${this.currentLevelNumber}`, 5, 15);

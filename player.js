@@ -4,46 +4,59 @@ export class Player {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.direction = 'right';
+        this.direction = 'downRight';
         this.isMoving = false;
         this.isJumping = false;
         this.jumpHeight = 0;
-        this.maxJumpHeight = 30; // Hauteur maximale du saut en pixels
-        this.jumpSpeed = 2; // Vitesse de saut
+        this.maxJumpHeight = 30;
+        this.jumpSpeed = 2;
         this.animationFrame = 0;
         this.lastFrameTime = 0;
-        this.frameDuration = 100; // Durée d'une frame en millisecondes
-        this.totalFrames = 6; // Nombre total de frames dans l'animation
+        this.frameDuration = 100;
+        this.totalFrames = 6;
         this.jumpFrame = 0;
+        this.jumpCycleComplete = false;
     }
 
     jump() {
         if (!this.isJumping) {
             this.isJumping = true;
             this.jumpFrame = 0;
+            this.jumpCycleComplete = false;
         }
     }
 
     updateAnimation(currentTime) {
         const elapsed = currentTime - this.lastFrameTime;
         if (elapsed >= this.frameDuration) {
+            this.lastFrameTime = currentTime;
+
             if (this.isJumping) {
-                this.jumpFrame = (this.jumpFrame + 1) % 4;
-                if (this.jumpFrame < 2) {
-                    this.jumpHeight += this.jumpSpeed;
-                } else {
-                    this.jumpHeight -= this.jumpSpeed;
-                }
-                if (this.jumpFrame === 0 && this.jumpHeight <= 0) {
-                    this.isJumping = false;
-                    this.jumpHeight = 0;
-                }
+                this.updateJumpAnimation();
             } else if (this.isMoving) {
                 this.animationFrame = (this.animationFrame + 1) % this.totalFrames;
             } else {
                 this.animationFrame = 0;
             }
-            this.lastFrameTime = currentTime;
+        }
+    }
+
+    updateJumpAnimation() {
+        if (this.jumpCycleComplete) {
+            this.isJumping = false;
+            this.jumpHeight = 0;
+            this.jumpFrame = 0;
+            return;
+        }
+
+        this.jumpFrame++;
+        if (this.jumpFrame < 3) {
+            this.jumpHeight += this.jumpSpeed;
+        } else if (this.jumpFrame < 5) {
+            this.jumpHeight -= this.jumpSpeed;
+        } else {
+            this.jumpHeight = 0;
+            this.jumpCycleComplete = true;
         }
     }
 
@@ -60,44 +73,29 @@ export class Player {
         if (sprite) {
             ctx.drawImage(sprite, drawX, drawY, CONFIG.spriteSize, CONFIG.spriteSize);
         }
-
-        // La partie de dessin de la hitbox a été retirée
     }
 
     getSprite(spriteMap) {
         let spriteKey;
+        let frame = this.animationFrame;
+
         if (this.isJumping) {
             spriteKey = this.direction === 'left' ? 'jumpLeft' : 'jumpRight';
-            return spriteMap[spriteKey][this.jumpFrame + 1]; // +1 car la première frame est la position neutre
+            frame = Math.min(this.jumpFrame, 4); // Assurez-vous que frame ne dépasse pas 4
         } else if (this.isMoving) {
-            switch(this.direction) {
-                case 'right':
-                    spriteKey = 'walkRight';
-                    break;
-                case 'left':
-                    spriteKey = 'walkLeft';
-                    break;
-                case 'up':
-                    spriteKey = 'walkUpRight';
-                    break;
-                case 'down':
-                    spriteKey = 'walkRight';
-                    break;
-            }
+            spriteKey = this.getMovingSpriteKey();
         } else {
-            switch(this.direction) {
-                case 'right':
-                case 'down':
-                    spriteKey = 'right';
-                    break;
-                case 'left':
-                    spriteKey = 'left';
-                    break;
-                case 'up':
-                    spriteKey = 'upRight';
-                    break;
-            }
+            spriteKey = this.getIdleSpriteKey();
         }
-        return spriteMap[spriteKey][this.animationFrame];
+
+        return spriteMap[spriteKey][frame] || spriteMap[spriteKey][0];
+    }
+
+    getMovingSpriteKey() {
+        return `walk${this.direction.charAt(0).toUpperCase() + this.direction.slice(1)}`;
+    }
+
+    getIdleSpriteKey() {
+        return this.direction;
     }
 }
