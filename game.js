@@ -32,33 +32,54 @@ export class Game {
     update(keysPressed, currentTime) {
         const deltaTime = currentTime - this.lastUpdateTime;
         this.lastUpdateTime = currentTime;
-
+    
         this.movePlayer(keysPressed, deltaTime);
         this.player.updateAnimation(currentTime);
+    }
+    updateAnimation(currentTime) {
+        const elapsed = currentTime - this.lastFrameTime;
+        if (elapsed >= this.frameDuration) {
+            this.lastFrameTime = currentTime;
+    
+            if (this.isJumping) {
+                this.updateJumpAnimation();
+            } else if (this.isMoving) {
+                this.animationFrame = (this.animationFrame + 1) % this.totalFrames.walk;
+            } else {
+                if (currentTime - this.lastMoveTime > this.idleThreshold) {
+                    // Passage en animation idle
+                    this.animationFrame = (this.animationFrame + 1) % this.totalFrames.idle;
+                } else {
+                    // Reste sur la première frame de l'animation de marche
+                    this.animationFrame = 0;
+                }
+            }
+        }
     }
 
     movePlayer(keysPressed, deltaTime) {
         const speed = (CONFIG.playerSpeed * deltaTime) / 16;
         let dx = 0, dy = 0;
-
+    
         if (keysPressed.has('left')) dx -= speed;
         if (keysPressed.has('right')) dx += speed;
         if (keysPressed.has('up')) dy -= speed;
         if (keysPressed.has('down')) dy += speed;
-
+    
         // Vérifier les collisions et ajuster la position
         const newX = this.player.x + dx;
         const newY = this.player.y + dy;
-
+    
         if (!this.checkCollision(newX, this.player.y)) {
             this.player.x = newX;
         }
         if (!this.checkCollision(this.player.x, newY)) {
             this.player.y = newY;
         }
-
+    
         this.player.isMoving = (dx !== 0 || dy !== 0);
         if (this.player.isMoving) {
+            this.player.lastMoveTime = performance.now();
             this.player.direction = this.getPlayerDirection(dx, dy);
         }
     }

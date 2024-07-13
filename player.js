@@ -13,9 +13,15 @@ export class Player {
         this.animationFrame = 0;
         this.lastFrameTime = 0;
         this.frameDuration = 100;
-        this.totalFrames = 6;
+        this.totalFrames = {
+            walk: 6,
+            jump: 6,
+            idle: 16
+        };
         this.jumpFrame = 0;
         this.jumpCycleComplete = false;
+        this.lastMoveTime = 0;
+        this.idleThreshold = 1000; // 1 seconde sans mouvement pour passer en idle
     }
 
     jump() {
@@ -34,9 +40,16 @@ export class Player {
             if (this.isJumping) {
                 this.updateJumpAnimation();
             } else if (this.isMoving) {
-                this.animationFrame = (this.animationFrame + 1) % this.totalFrames;
+                this.animationFrame = (this.animationFrame + 1) % this.totalFrames.walk;
+                this.lastMoveTime = currentTime;
             } else {
-                this.animationFrame = 0;
+                if (currentTime - this.lastMoveTime > this.idleThreshold) {
+                    // Passage en animation idle
+                    this.animationFrame = (this.animationFrame + 1) % this.totalFrames.idle;
+                } else {
+                    // Reste sur la première frame de l'animation de marche
+                    this.animationFrame = 0;
+                }
             }
         }
     }
@@ -59,7 +72,7 @@ export class Player {
             this.jumpCycleComplete = true;
         }
 
-        this.animationFrame = Math.min(this.jumpFrame, 5);
+        this.animationFrame = Math.min(this.jumpFrame, this.totalFrames.jump - 1);
     }
 
     draw(ctx, playerSprites, playerShadows) {
@@ -82,7 +95,7 @@ export class Player {
 
         if (this.isJumping) {
             spriteKey = `jump${this.direction.charAt(0).toUpperCase() + this.direction.slice(1)}`;
-        } else if (this.isMoving) {
+        } else if (this.isMoving || Date.now() - this.lastMoveTime <= this.idleThreshold) {
             spriteKey = this.getMovingSpriteKey();
         } else {
             spriteKey = this.getIdleSpriteKey();
@@ -96,6 +109,6 @@ export class Player {
     }
 
     getIdleSpriteKey() {
-        return this.direction;
+        return `idle${this.direction.charAt(0).toUpperCase() + this.direction.slice(1)}`;
     }
 }

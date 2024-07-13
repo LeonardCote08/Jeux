@@ -3,19 +3,21 @@ import { CONFIG } from './config.js';
 export const playerSprites = {
     right: [], left: [], upRight: [], upLeft: [], downRight: [], downLeft: [],
     walkRight: [], walkLeft: [], walkUpRight: [], walkUpLeft: [], walkDownRight: [], walkDownLeft: [],
-    jumpRight: [], jumpLeft: [], jumpUpRight: [], jumpUpLeft: [], jumpDownRight: [], jumpDownLeft: []
+    jumpRight: [], jumpLeft: [], jumpUpRight: [], jumpUpLeft: [], jumpDownRight: [], jumpDownLeft: [],
+    idleRight: [], idleLeft: [], idleUpRight: [], idleUpLeft: [], idleDownRight: [], idleDownLeft: []
 };
 
 export const playerShadows = {
     right: [], left: [], upRight: [], upLeft: [], downRight: [], downLeft: [],
     walkRight: [], walkLeft: [], walkUpRight: [], walkUpLeft: [], walkDownRight: [], walkDownLeft: [],
-    jumpRight: [], jumpLeft: [], jumpUpRight: [], jumpUpLeft: [], jumpDownRight: [], jumpDownLeft: []
+    jumpRight: [], jumpLeft: [], jumpUpRight: [], jumpUpLeft: [], jumpDownRight: [], jumpDownLeft: [],
+    idleRight: [], idleLeft: [], idleUpRight: [], idleUpLeft: [], idleDownRight: [], idleDownLeft: []
 };
 
 const treeImages = {};
 const imageNames = ['corner_top_left', 'corner_top_right', 'trunk_left', 'trunk_right'];
 
-export let grassTexture; // Nouvelle variable pour stocker la texture d'herbe
+export let grassTexture;
 
 export async function loadAssets() {
     await Promise.all([loadPlayerSprites(), loadTreeImages(), loadGrassTexture()]);
@@ -32,22 +34,20 @@ async function loadTreeImages() {
 async function loadPlayerSprites() {
     const walkSheet = await loadImage('Assets/player/minotaur/MinotaurWalk.png');
     const jumpSheet = await loadImage('Assets/player/minotaur/MinotaurJump.png');
+    const idleSheet = await loadImage('Assets/player/minotaur/MinotaurIdle.png');
     const shadowWalkSheet = await loadImage('Assets/player/minotaur/shadows/ShadowWalk.png');
     const shadowJumpSheet = await loadImage('Assets/player/minotaur/shadows/ShadowJump.png');
+    const shadowIdleSheet = await loadImage('Assets/player/minotaur/shadows/ShadowIdle.png');
     
     const directions = ['downRight', 'downLeft', 'upRight', 'upLeft'];
     
     directions.forEach((dir, i) => {
         // Chargement des sprites de marche
-        playerSprites[dir] = [extractSprite(walkSheet, 0, i)];
-        playerShadows[dir] = [extractSprite(shadowWalkSheet, 0, i)];
         playerSprites[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
         playerShadows[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
-
         for (let j = 0; j < 6; j++) {
             const sprite = extractSprite(walkSheet, j, i);
             const shadow = extractSprite(shadowWalkSheet, j, i);
-            
             playerSprites[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(sprite);
             playerShadows[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(shadow);
         }
@@ -55,29 +55,42 @@ async function loadPlayerSprites() {
         // Chargement des sprites de saut
         playerSprites[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
         playerShadows[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
-
         for (let j = 0; j < 6; j++) {
             const jumpSprite = extractSprite(jumpSheet, j, i);
             const jumpShadow = extractSprite(shadowJumpSheet, j, i);
-            
             playerSprites[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(jumpSprite);
             playerShadows[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(jumpShadow);
+        }
+
+        // Chargement des sprites idle
+        playerSprites[`idle${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
+        playerShadows[`idle${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
+        for (let j = 0; j < 16; j++) {
+            const idleSprite = extractSprite(idleSheet, j, i);
+            const idleShadow = extractSprite(shadowIdleSheet, j, i);
+            playerSprites[`idle${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(idleSprite);
+            playerShadows[`idle${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(idleShadow);
         }
     });
 
     // Ajout des directions droite et gauche
-    playerSprites.right = playerSprites.downRight;
-    playerSprites.left = playerSprites.downLeft;
+    playerSprites.right = playerSprites.walkDownRight;
+    playerSprites.left = playerSprites.walkDownLeft;
     playerSprites.walkRight = playerSprites.walkDownRight;
     playerSprites.walkLeft = playerSprites.walkDownLeft;
     playerSprites.jumpRight = playerSprites.jumpDownRight;
     playerSprites.jumpLeft = playerSprites.jumpDownLeft;
-    playerShadows.right = playerShadows.downRight;
-    playerShadows.left = playerShadows.downLeft;
+    playerSprites.idleRight = playerSprites.idleDownRight;
+    playerSprites.idleLeft = playerSprites.idleDownLeft;
+
+    playerShadows.right = playerShadows.walkDownRight;
+    playerShadows.left = playerShadows.walkDownLeft;
     playerShadows.walkRight = playerShadows.walkDownRight;
     playerShadows.walkLeft = playerShadows.walkDownLeft;
     playerShadows.jumpRight = playerShadows.jumpDownRight;
     playerShadows.jumpLeft = playerShadows.jumpDownLeft;
+    playerShadows.idleRight = playerShadows.idleDownRight;
+    playerShadows.idleLeft = playerShadows.idleDownLeft;
 }
 
 function loadImage(src) {
