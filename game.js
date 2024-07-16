@@ -24,8 +24,26 @@ export class Game {
         this.level = new Level(CONFIG.gridWidth, CONFIG.gridHeight, entrancePos);
         this.level.generate();
         
-        const playerStartX = this.level.entrance.x * CONFIG.cellSize;
-        const playerStartY = this.level.entrance.y * CONFIG.cellSize;
+        // Calculer la position légèrement à l'intérieur du labyrinthe
+        let playerStartX, playerStartY;
+        const inset = CONFIG.cellSize * 0.1; // 10% de la taille d'une cellule
+        
+        if (this.level.entrance.x === 0) {
+            playerStartX = inset; // Légèrement à l'intérieur depuis le bord gauche
+        } else if (this.level.entrance.x === CONFIG.gridWidth - 1) {
+            playerStartX = (CONFIG.gridWidth - 1) * CONFIG.cellSize - inset; // Légèrement à l'intérieur depuis le bord droit
+        } else {
+            playerStartX = this.level.entrance.x * CONFIG.cellSize;
+        }
+        
+        if (this.level.entrance.y === 0) {
+            playerStartY = inset; // Légèrement à l'intérieur depuis le bord supérieur
+        } else if (this.level.entrance.y === CONFIG.gridHeight - 1) {
+            playerStartY = (CONFIG.gridHeight - 1) * CONFIG.cellSize - inset; // Légèrement à l'intérieur depuis le bord inférieur
+        } else {
+            playerStartY = this.level.entrance.y * CONFIG.cellSize;
+        }
+        
         this.player = new Player(playerStartX, playerStartY);
     }
 
@@ -36,7 +54,6 @@ export class Game {
         this.movePlayer(keysPressed, deltaTime);
         this.player.updateAnimation(currentTime);
 
-        // Vérifier si le joueur a atteint la sortie
         if (this.hasReachedExit()) {
             this.goToNextLevel();
         }
@@ -44,10 +61,9 @@ export class Game {
 
     goToNextLevel() {
         this.currentLevelNumber++;
-        // Utiliser la position de sortie actuelle comme position d'entrée pour le prochain niveau
         const entrancePos = {
-            x: this.level.exit.x,
-            y: this.level.exit.y
+            x: this.level.exit.x === 0 ? CONFIG.gridWidth - 1 : (this.level.exit.x === CONFIG.gridWidth - 1 ? 0 : this.level.exit.x),
+            y: this.level.exit.y === 0 ? CONFIG.gridHeight - 1 : (this.level.exit.y === CONFIG.gridHeight - 1 ? 0 : this.level.exit.y)
         };
         this.generateNewLevel(entrancePos);
     }

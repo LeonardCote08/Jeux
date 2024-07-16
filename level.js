@@ -9,13 +9,13 @@ export class Level {
         this.entrance = entrancePos || this.getRandomBorderPosition();
         this.exit = null;
         this.flowers = [];
-        this.clearings = []; // Nouvelle propriété pour stocker les clairières
+        this.clearings = [];
     }
 
     generate() {
         this.initializeMaze();
         this.carvePathways();
-        this.createClearings(); // Nouvelle méthode pour créer des clairières
+        this.createClearings();
         this.openEntranceAndExit();
         this.ensureEntrancePathway();
         this.ensureExitPathway();
@@ -141,7 +141,7 @@ export class Level {
 
     openEntranceAndExit() {
         this.maze[this.entrance.y][this.entrance.x] = 0;
-        this.exit = this.getValidExitPosition();
+        this.exit = this.getOppositeExit();
         this.maze[this.exit.y][this.exit.x] = 0;
     }
 
@@ -193,11 +193,22 @@ export class Level {
         return { x, y };
     }
 
-    getOppositePosition(pos) {
-        return {
-            x: pos.x === 0 ? this.width - 1 : (pos.x === this.width - 1 ? 0 : pos.x),
-            y: pos.y === 0 ? this.height - 1 : (pos.y === this.height - 1 ? 0 : pos.y)
-        };
+    getOppositeExit() {
+        let x, y;
+        if (this.entrance.x === 0) {
+            x = this.width - 1;
+            y = Math.floor(Math.random() * (this.height - 2)) + 1;
+        } else if (this.entrance.x === this.width - 1) {
+            x = 0;
+            y = Math.floor(Math.random() * (this.height - 2)) + 1;
+        } else if (this.entrance.y === 0) {
+            y = this.height - 1;
+            x = Math.floor(Math.random() * (this.width - 2)) + 1;
+        } else {
+            y = 0;
+            x = Math.floor(Math.random() * (this.width - 2)) + 1;
+        }
+        return { x, y };
     }
 
     isValid(x, y) {
