@@ -35,7 +35,29 @@ export class Game {
     
         this.movePlayer(keysPressed, deltaTime);
         this.player.updateAnimation(currentTime);
+
+        // Vérifier si le joueur a atteint la sortie
+        if (this.hasReachedExit()) {
+            this.goToNextLevel();
+        }
     }
+
+    goToNextLevel() {
+        this.currentLevelNumber++;
+        // Utiliser la position de sortie actuelle comme position d'entrée pour le prochain niveau
+        const entrancePos = {
+            x: this.level.exit.x,
+            y: this.level.exit.y
+        };
+        this.generateNewLevel(entrancePos);
+    }
+
+    hasReachedExit() {
+        const playerCellX = Math.floor(this.player.x / CONFIG.cellSize);
+        const playerCellY = Math.floor(this.player.y / CONFIG.cellSize);
+        return playerCellX === this.level.exit.x && playerCellY === this.level.exit.y;
+    }
+
     updateAnimation(currentTime) {
         const elapsed = currentTime - this.lastFrameTime;
         if (elapsed >= this.frameDuration) {
@@ -125,18 +147,13 @@ export class Game {
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Dessiner le fond texturé
         this.drawBackground();
-        
-        // Dessiner le labyrinthe
         this.level.draw(this.ctx);
-        
-        // Dessiner le joueur
         this.player.draw(this.ctx, this.playerSprites, this.playerShadows);
         
         // Afficher le numéro du niveau
         this.ctx.fillStyle = 'white';
-        this.ctx.font = '12px Arial';
-        this.ctx.fillText(`Niveau: ${this.currentLevelNumber}`, 5, 15);
+        this.ctx.font = '20px Arial';
+        this.ctx.fillText(`Niveau: ${this.currentLevelNumber}`, 10, 30);
     }
 }
