@@ -7,13 +7,15 @@ export class Level {
         this.height = height;
         this.maze = [];
         this.entrance = entrancePos || this.getRandomBorderPosition();
-        this.exit = null; // We'll set this later
+        this.exit = null;
         this.flowers = [];
+        this.clearings = []; // Nouvelle propriété pour stocker les clairières
     }
 
     generate() {
         this.initializeMaze();
         this.carvePathways();
+        this.createClearings(); // Nouvelle méthode pour créer des clairières
         this.openEntranceAndExit();
         this.ensureEntrancePathway();
         this.ensureExitPathway();
@@ -64,10 +66,77 @@ export class Level {
             if (this.maze[y][x] === 1) {
                 this.maze[y][x] = 0;
                 this.maze[wy][wx] = 0;
+
+                // Chance de créer un passage plus large
+                if (Math.random() < 0.3) { // 30% de chance
+                    this.widenPassage(x, y);
+                }
+
                 walls.push(...this.getNeighbors(x, y));
             }
             walls.splice(wallIndex, 1);
         }
+    }
+
+    widenPassage(x, y) {
+        const directions = [{dx: -1, dy: 0}, {dx: 1, dy: 0}, {dx: 0, dy: -1}, {dx: 0, dy: 1}];
+        for (let dir of directions) {
+            let newX = x + dir.dx;
+            let newY = y + dir.dy;
+            if (this.isValid(newX, newY) && this.maze[newY][newX] === 1) {
+                this.maze[newY][newX] = 0;
+            }
+        }
+    }
+
+    createClearings() {
+        const numClearings = Math.floor(Math.random() * 4) + 3; // 3 à 6 clairières
+        for (let i = 0; i < numClearings; i++) {
+            this.createClearing();
+        }
+    }
+
+    createClearing() {
+        let attempts = 0;
+        while (attempts < 50) { // Limite les tentatives pour éviter une boucle infinie
+            let x = Math.floor(Math.random() * (this.width - 3)) + 2;
+            let y = Math.floor(Math.random() * (this.height - 3)) + 2;
+            
+            if (this.canCreateClearing(x, y)) {
+                // Nouvelle logique pour déterminer la taille de la clairière
+                let size;
+                const randomValue = Math.random();
+                if (randomValue < 0.5) {
+                    size = 2; // 50% de chance d'avoir une clairière 2x2
+                } else if (randomValue < 0.8) {
+                    size = 3; // 30% de chance d'avoir une clairière 3x3
+                } else {
+                    size = 4; // 20% de chance d'avoir une clairière 4x4
+                }
+
+                for (let dy = 0; dy < size; dy++) {
+                    for (let dx = 0; dx < size; dx++) {
+                        if (this.isValid(x + dx, y + dy)) {
+                            this.maze[y + dy][x + dx] = 0;
+                        }
+                    }
+                }
+                this.clearings.push({x, y, size});
+                break;
+            }
+            attempts++;
+        }
+    }
+    canCreateClearing(x, y) {
+        // Vérifie si une zone 4x4 autour du point (x,y) est valide pour une clairière
+        for (let dy = -1; dy <= 4; dy++) {
+            for (let dx = -1; dx <= 4; dx++) {
+                if (!this.isValid(x + dx, y + dy)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     openEntranceAndExit() {
@@ -162,5 +231,7 @@ export class Level {
         for (let flower of this.flowers) {
             drawFlower(ctx, flower.x, flower.y, flower.type);
         }
+
+        // Vous pouvez ajouter ici du code pour visualiser les clairières si nécessaire
     }
 }
