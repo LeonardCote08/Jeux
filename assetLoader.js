@@ -20,10 +20,11 @@ let treeShadowImage;
 let appleTreeImage;
 let appleTreeShadowImage;
 let flowerImages = {};
-let pondImage;
 let pondSidesImages = [];
 let waterAnimationFrame = 0;
-const ANIMATION_SPEED = 500; // Changement d'image toutes les 500ms
+const ANIMATION_SPEED = 500; 
+let animationCounter = 0;
+const ANIMATION_FRAME_RATE = 60; // Nombre de frames par seconde du jeu
 export let grassTexture;
 
 export async function loadAssets() {
@@ -153,13 +154,13 @@ export function drawPond(ctx, x, y, width, height) {
 }
 
 export function updateWaterAnimation() {
-    waterAnimationFrame = (waterAnimationFrame + 1) % pondSidesImages.length;
+    animationCounter++;
+    if (animationCounter >= ANIMATION_SPEED / (1000 / ANIMATION_FRAME_RATE)) {
+        waterAnimationFrame = (waterAnimationFrame + 1) % pondSidesImages.length;
+        animationCounter = 0;
+    }
 }
 
-// Fonction pour démarrer l'animation de l'eau
-export function startWaterAnimation() {
-    setInterval(updateWaterAnimation, ANIMATION_SPEED);
-}
 
 // Charge la texture de l'herbe
 async function loadGrassTexture() {
