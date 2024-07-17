@@ -13,8 +13,8 @@ export class Level {
         this.flowers = [];
         this.clearings = [];
         this.ponds = [];
-        this.minPondSize = 24;
-        this.maxPondSize = 48;
+        this.minPondSize = 1; // Taille minimale d'un côté d'étang en cellules
+        this.maxPondSize = 4; // Taille maximale d'un côté d'étang en cellules
         this.minPathLength = Math.floor(Math.max(width, height) * 1.5);
         
         
@@ -74,9 +74,16 @@ export class Level {
         for (let y = 1; y < this.height - 1; y++) {
             for (let x = 1; x < this.width - 1; x++) {
                 if (this.maze[y][x] === 0 && Math.random() < pondDensity) {
-                    const pondSize = Math.floor(Math.random() * (this.maxPondSize - this.minPondSize + 1)) + this.minPondSize;
-                    const pondWidth = Math.ceil(pondSize / CONFIG.cellSize) * CONFIG.cellSize;
-                    const pondHeight = Math.ceil(pondSize / CONFIG.cellSize) * CONFIG.cellSize;
+                    let pondWidth = Math.floor(Math.random() * (this.maxPondSize - this.minPondSize + 1)) + this.minPondSize;
+                    let pondHeight = Math.floor(Math.random() * (this.maxPondSize - this.minPondSize + 1)) + this.minPondSize;
+
+                    // S'assurer que l'étang n'est pas carré si possible
+                    while (pondWidth === pondHeight && Math.random() < 0.7) {
+                        pondHeight = Math.floor(Math.random() * (this.maxPondSize - this.minPondSize + 1)) + this.minPondSize;
+                    }
+
+                    pondWidth *= CONFIG.cellSize;
+                    pondHeight *= CONFIG.cellSize;
 
                     if (this.canPlacePond(x, y, pondWidth / CONFIG.cellSize, pondHeight / CONFIG.cellSize)) {
                         this.ponds.push({ x, y, width: pondWidth, height: pondHeight });
@@ -100,12 +107,20 @@ export class Level {
             for (let dx = 0; dx < width; dx++) {
                 const checkX = x + dx;
                 const checkY = y + dy;
-                if (checkX < 0 || checkX >= this.width || checkY < 0 || checkY >= this.height || this.maze[checkY][checkX] !== 0) {
+                if (checkX < 0 || checkX >= this.width || checkY < 0 || checkY >= this.height || 
+                    this.maze[checkY][checkX] !== 0 || 
+                    this.isNearBorder(checkX, checkY)) {
                     return false;
                 }
             }
         }
         return true;
+    }
+
+    isNearBorder(x, y) {
+        const borderDistance = 2; // Distance minimale du bord
+        return x < borderDistance || x >= this.width - borderDistance ||
+               y < borderDistance || y >= this.height - borderDistance;
     }
 
     getUnvisitedNeighbors(cell) {
