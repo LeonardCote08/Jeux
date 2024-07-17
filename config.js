@@ -8,6 +8,7 @@ export const CONFIG = {
     minEntranceExitDistance: 15,
     spriteSize: 64,
     playerHitboxSize: 20,
-    treeHitboxSize: 28  // Nouvelle constante pour la hitbox des arbres (légèrement plus petite que cellSize)
-    
+    treeHitboxSize: 28,
+    minPathLengthFactor: 3.5,  // Augmenté de 2.5 à 3.5
+    minAdditionalPathLength: 10,  // Nouvelle constante pour une longueur additionnelle minimale
 };

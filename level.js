@@ -15,7 +15,7 @@ export class Level {
         this.ponds = [];
         this.minPondSize = 1;
         this.maxPondSize = 4;
-        this.minPathLength = Math.floor(Math.max(width, height) * 1.5);
+        this.minPathLength = Math.floor(Math.max(width, height) * CONFIG.minPathLengthFactor);
         
         // Pré-calcul des directions pour optimiser les boucles
         this.directions = [
@@ -139,26 +139,46 @@ export class Level {
     carvePathways() {
         const stack = [{ x: 1, y: 1 }];
         const visited = new Set();
-
+    
         while (stack.length > 0) {
             const current = stack.pop();
             const key = `${current.x},${current.y}`;
-
+    
             if (!visited.has(key)) {
                 visited.add(key);
                 this.maze[current.y][current.x] = 0;
-
+    
                 const neighbors = this.getUnvisitedNeighbors(current);
                 for (const neighbor of neighbors) {
                     stack.push(neighbor);
-                    if (Math.random() < 0.5) {
+                    // Augmenter la probabilité de créer des chemins supplémentaires
+                    if (Math.random() < 0.7) {  // Augmenté de 0.5 à 0.7
                         const midX = (current.x + neighbor.x) / 2;
                         const midY = (current.y + neighbor.y) / 2;
                         this.maze[Math.floor(midY)][Math.floor(midX)] = 0;
                     }
                 }
+    
+                // Ajouter des chemins supplémentaires aléatoires
+                if (Math.random() < 0.3) {  // 30% de chance d'ajouter un chemin supplémentaire
+                    const randomNeighbor = this.getRandomNeighbor(current);
+                    if (randomNeighbor) {
+                        this.maze[randomNeighbor.y][randomNeighbor.x] = 0;
+                    }
+                }
             }
         }
+    }
+
+    getRandomNeighbor(cell) {
+        const neighbors = this.directions
+            .map(dir => ({
+                x: cell.x + dir.dx,
+                y: cell.y + dir.dy
+            }))
+            .filter(newCell => this.isValid(newCell.x, newCell.y));
+        
+        return neighbors[Math.floor(Math.random() * neighbors.length)];
     }
 
     createClearings() {
@@ -222,33 +242,42 @@ export class Level {
     }
 
     isValidExit(exitPos) {
-        return !(exitPos.x === this.entrance.x && exitPos.y === this.entrance.y) &&
-               this.getPathLength(this.entrance, exitPos) >= this.minPathLength;
+        if (exitPos.x === this.entrance.x && exitPos.y === this.entrance.y) {
+            return false;
+        }
+        
+        const pathLength = this.getPathLength(this.entrance, exitPos);
+        const minRequiredLength = Math.max(
+            this.minPathLength,
+            Math.floor(Math.max(this.width, this.height) * CONFIG.minPathLengthFactor) + CONFIG.minAdditionalPathLength
+        );
+        
+        return pathLength >= minRequiredLength;
     }
 
     getPathLength(start, end) {
         const queue = new PriorityQueue();
         const visited = new Set();
         const distances = new Map();
-
+    
         distances.set(`${start.x},${start.y}`, 0);
         queue.enqueue(start, 0);
-
+    
         while (!queue.isEmpty()) {
             const current = queue.dequeue();
             const currentKey = `${current.x},${current.y}`;
-
+    
             if (current.x === end.x && current.y === end.y) {
                 return distances.get(currentKey);
             }
-
+    
             if (visited.has(currentKey)) continue;
             visited.add(currentKey);
-
+    
             for (const neighbor of this.getNeighbors(current)) {
                 const neighborKey = `${neighbor.x},${neighbor.y}`;
                 const newDistance = distances.get(currentKey) + 1;
-
+    
                 if (!distances.has(neighborKey) || newDistance < distances.get(neighborKey)) {
                     distances.set(neighborKey, newDistance);
                     const priority = newDistance + this.heuristic(neighbor, end);
@@ -256,8 +285,8 @@ export class Level {
                 }
             }
         }
-
-        return Infinity;
+    
+        return Infinity; // Aucun chemin trouvé
     }
 
     heuristic(a, b) {
