@@ -7,16 +7,15 @@ export class Level {
         this.width = width;
         this.height = height;
         this.maze = [];
-        this.treeTypes = []; // Nouveau tableau pour stocker les types d'arbres
+        this.treeTypes = [];
         this.entrance = entrancePos || this.getRandomBorderPosition();
         this.exit = null;
         this.flowers = [];
         this.clearings = [];
         this.ponds = [];
-        this.minPondSize = 1; // Taille minimale d'un côté d'étang en cellules
-        this.maxPondSize = 4; // Taille maximale d'un côté d'étang en cellules
+        this.minPondSize = 1;
+        this.maxPondSize = 4;
         this.minPathLength = Math.floor(Math.max(width, height) * 1.5);
-        
         
         // Pré-calcul des directions pour optimiser les boucles
         this.directions = [
@@ -33,7 +32,7 @@ export class Level {
         this.ensureEntrancePathway();
         this.ensureExitPathway();
         this.addRandomFlowers();
-        this.addRandomPonds(); // Assurez-vous que cette ligne est présente
+        this.addRandomPonds();
         this.removeDeadEnds();
         this.closeUnusedBorderOpenings();
     }
@@ -46,7 +45,6 @@ export class Level {
             )
         );
         
-        // Initialiser le tableau des types d'arbres avec 15% de chance pour les pommiers
         this.treeTypes = Array(this.height).fill().map(() => 
             Array(this.width).fill().map(() => 
                 Math.random() < 0.15 ? 'apple' : 'normal'
@@ -61,15 +59,18 @@ export class Level {
         for (let y = 1; y < this.height - 1; y++) {
             for (let x = 1; x < this.width - 1; x++) {
                 if (this.maze[y][x] === 0 && Math.random() < flowerDensity) {
-                    const flowerType = flowerTypes[Math.floor(Math.random() * flowerTypes.length)];
-                    this.flowers.push({ x, y, type: flowerType });
+                    this.flowers.push({ 
+                        x, 
+                        y, 
+                        type: flowerTypes[Math.floor(Math.random() * flowerTypes.length)]
+                    });
                 }
             }
         }
     }
 
     addRandomPonds() {
-        const pondDensity = 0.01; // Ajustez cette valeur pour contrôler la densité des étangs
+        const pondDensity = 0.01;
 
         for (let y = 1; y < this.height - 1; y++) {
             for (let x = 1; x < this.width - 1; x++) {
@@ -77,7 +78,6 @@ export class Level {
                     let pondWidth = Math.floor(Math.random() * (this.maxPondSize - this.minPondSize + 1)) + this.minPondSize;
                     let pondHeight = Math.floor(Math.random() * (this.maxPondSize - this.minPondSize + 1)) + this.minPondSize;
 
-                    // S'assurer que l'étang n'est pas carré si possible
                     while (pondWidth === pondHeight && Math.random() < 0.7) {
                         pondHeight = Math.floor(Math.random() * (this.maxPondSize - this.minPondSize + 1)) + this.minPondSize;
                     }
@@ -97,19 +97,20 @@ export class Level {
     markPondArea(x, y, width, height) {
         for (let dy = 0; dy < height; dy++) {
             for (let dx = 0; dx < width; dx++) {
-                this.maze[y + dy][x + dx] = 2; // Marquer la cellule comme étang
+                this.maze[y + dy][x + dx] = 2;
             }
         }
     }
 
     canPlacePond(x, y, width, height) {
+        if (x + width > this.width || y + height > this.height) {
+            return false;
+        }
         for (let dy = 0; dy < height; dy++) {
             for (let dx = 0; dx < width; dx++) {
                 const checkX = x + dx;
                 const checkY = y + dy;
-                if (checkX < 0 || checkX >= this.width || checkY < 0 || checkY >= this.height || 
-                    this.maze[checkY][checkX] !== 0 || 
-                    this.isNearBorder(checkX, checkY)) {
+                if (this.maze[checkY][checkX] !== 0 || this.isNearBorder(checkX, checkY)) {
                     return false;
                 }
             }
@@ -118,23 +119,21 @@ export class Level {
     }
 
     isNearBorder(x, y) {
-        const borderDistance = 2; // Distance minimale du bord
+        const borderDistance = 2;
         return x < borderDistance || x >= this.width - borderDistance ||
                y < borderDistance || y >= this.height - borderDistance;
     }
 
     getUnvisitedNeighbors(cell) {
-        const neighbors = [];
-        const directions = [{dx: 0, dy: 2}, {dx: 2, dy: 0}, {dx: 0, dy: -2}, {dx: -2, dy: 0}];
-        
-        for (const dir of directions) {
-            const newX = cell.x + dir.dx;
-            const newY = cell.y + dir.dy;
-            if (this.isValid(newX, newY) && this.maze[newY][newX] === 1) {
-                neighbors.push({x: newX, y: newY});
-            }
-        }
-        return neighbors.sort(() => Math.random() - 0.5); // Mélanger les voisins
+        return this.directions
+            .map(dir => ({
+                x: cell.x + dir.dx * 2,
+                y: cell.y + dir.dy * 2
+            }))
+            .filter(newCell => 
+                this.isValid(newCell.x, newCell.y) && 
+                this.maze[newCell.y][newCell.x] === 1
+            );
     }
 
     carvePathways() {
@@ -162,17 +161,6 @@ export class Level {
         }
     }
 
-    widenPassage(x, y) {
-        const directions = [{dx: -1, dy: 0}, {dx: 1, dy: 0}, {dx: 0, dy: -1}, {dx: 0, dy: 1}];
-        for (let dir of directions) {
-            let newX = x + dir.dx;
-            let newY = y + dir.dy;
-            if (this.isValid(newX, newY) && this.maze[newY][newX] === 1) {
-                this.maze[newY][newX] = 0;
-            }
-        }
-    }
-
     createClearings() {
         const numClearings = Math.floor(Math.random() * 3) + 3;
         for (let i = 0; i < numClearings; i++) {
@@ -181,10 +169,10 @@ export class Level {
     }
 
     createClearing() {
-        let attempts = 0;
-        while (attempts < 50) {
-            let x = Math.floor(Math.random() * (this.width - 5)) + 2;
-            let y = Math.floor(Math.random() * (this.height - 5)) + 2;
+        const maxAttempts = 50;
+        for (let attempts = 0; attempts < maxAttempts; attempts++) {
+            const x = Math.floor(Math.random() * (this.width - 5)) + 2;
+            const y = Math.floor(Math.random() * (this.height - 5)) + 2;
             
             if (this.canCreateClearing(x, y)) {
                 const size = Math.random() < 0.7 ? 3 : 4;
@@ -196,13 +184,12 @@ export class Level {
                     }
                 }
                 this.clearings.push({x, y, size});
-                break;
+                return;
             }
-            attempts++;
         }
     }
+
     canCreateClearing(x, y) {
-        // Vérifie si une zone 4x4 autour du point (x,y) est valide pour une clairière
         for (let dy = -1; dy <= 4; dy++) {
             for (let dx = -1; dx <= 4; dx++) {
                 if (!this.isValid(x + dx, y + dy)) {
@@ -214,55 +201,37 @@ export class Level {
     }
 
     openEntranceAndExit() {
-        // Ouvrir l'entrée
         this.maze[this.entrance.y][this.entrance.x] = 0;
-        
-        // Trouver et ouvrir la sortie
         this.exit = this.getValidExitPosition();
         this.maze[this.exit.y][this.exit.x] = 0;
     }
 
     getValidExitPosition() {
         let exitPos;
-        let attempts = 0;
-        const maxAttempts = 200; // Augmenté pour plus de tentatives
+        const maxAttempts = 200;
 
-        do {
+        for (let attempts = 0; attempts < maxAttempts; attempts++) {
             exitPos = this.getRandomBorderPosition();
-            attempts++;
-            if (attempts >= maxAttempts) {
-                console.warn("Impossible de trouver une sortie valide après " + maxAttempts + " tentatives. Utilisation de la dernière position générée.");
-                break;
+            if (this.isValidExit(exitPos)) {
+                return exitPos;
             }
-        } while (!this.isValidExit(exitPos));
+        }
 
+        console.warn(`Impossible de trouver une sortie valide après ${maxAttempts} tentatives. Utilisation de la dernière position générée.`);
         return exitPos;
     }
 
     isValidExit(exitPos) {
-        if (exitPos.x === this.entrance.x && exitPos.y === this.entrance.y) {
-            return false;
-        }
-
-        const pathLength = this.getPathLength(this.entrance, exitPos);
-        return pathLength >= this.minPathLength;
-    }
-
-    reconstructPath(cameFrom, current) {
-        const path = [current];
-        while (cameFrom[`${current.x},${current.y}`]) {
-            current = cameFrom[`${current.x},${current.y}`];
-            path.unshift(current);
-        }
-        return path;
+        return !(exitPos.x === this.entrance.x && exitPos.y === this.entrance.y) &&
+               this.getPathLength(this.entrance, exitPos) >= this.minPathLength;
     }
 
     getPathLength(start, end) {
         const queue = new PriorityQueue();
         const visited = new Set();
-        const distances = {};
+        const distances = new Map();
 
-        distances[`${start.x},${start.y}`] = 0;
+        distances.set(`${start.x},${start.y}`, 0);
         queue.enqueue(start, 0);
 
         while (!queue.isEmpty()) {
@@ -270,7 +239,7 @@ export class Level {
             const currentKey = `${current.x},${current.y}`;
 
             if (current.x === end.x && current.y === end.y) {
-                return distances[currentKey];
+                return distances.get(currentKey);
             }
 
             if (visited.has(currentKey)) continue;
@@ -278,10 +247,10 @@ export class Level {
 
             for (const neighbor of this.getNeighbors(current)) {
                 const neighborKey = `${neighbor.x},${neighbor.y}`;
-                const newDistance = distances[currentKey] + 1;
+                const newDistance = distances.get(currentKey) + 1;
 
-                if (!distances[neighborKey] || newDistance < distances[neighborKey]) {
-                    distances[neighborKey] = newDistance;
+                if (!distances.has(neighborKey) || newDistance < distances.get(neighborKey)) {
+                    distances.set(neighborKey, newDistance);
                     const priority = newDistance + this.heuristic(neighbor, end);
                     queue.enqueue(neighbor, priority);
                 }
@@ -291,72 +260,14 @@ export class Level {
         return Infinity;
     }
 
-    getPathDistance(start, end) {
-        const openSet = new PriorityQueue();
-        const closedSet = new Set();
-        const gScore = {};
-        const fScore = {};
-        const cameFrom = {};
-
-        gScore[`${start.x},${start.y}`] = 0;
-        fScore[`${start.x},${start.y}`] = this.heuristic(start, end);
-        openSet.enqueue(start, fScore[`${start.x},${start.y}`]);
-
-        while (!openSet.isEmpty()) {
-            const current = openSet.dequeue();
-
-            if (current.x === end.x && current.y === end.y) {
-                return this.reconstructPath(cameFrom, current).length - 1;
-            }
-
-            closedSet.add(`${current.x},${current.y}`);
-
-            for (const neighbor of this.getNeighbors(current)) {
-                if (closedSet.has(`${neighbor.x},${neighbor.y}`)) continue;
-
-                const tentativeGScore = gScore[`${current.x},${current.y}`] + 1;
-
-                if (!openSet.contains(neighbor) || tentativeGScore < gScore[`${neighbor.x},${neighbor.y}`]) {
-                    cameFrom[`${neighbor.x},${neighbor.y}`] = current;
-                    gScore[`${neighbor.x},${neighbor.y}`] = tentativeGScore;
-                    fScore[`${neighbor.x},${neighbor.y}`] = gScore[`${neighbor.x},${neighbor.y}`] + this.heuristic(neighbor, end);
-
-                    if (!openSet.contains(neighbor)) {
-                        openSet.enqueue(neighbor, fScore[`${neighbor.x},${neighbor.y}`]);
-                    }
-                }
-            }
-        }
-
-        // Aucun chemin trouvé
-        return Infinity;
-    }
-
     heuristic(a, b) {
         return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
     }
 
-    ensureEntrancePathway() {
-        this.ensurePathway(this.entrance);
-    }
-
-    getDistance(pos1, pos2) {
-        return Math.abs(pos1.x - pos2.x) + Math.abs(pos1.y - pos2.y);
-    }
-
-    ensureExitPathway() {
-        this.ensurePathway(this.exit);
-    }
-
     ensurePathway(position) {
-        const directions = [
-            {dx: 0, dy: 1}, {dx: 0, dy: -1},
-            {dx: 1, dy: 0}, {dx: -1, dy: 0}
-        ];
-
-        for (let dir of directions) {
-            let newX = position.x + dir.dx;
-            let newY = position.y + dir.dy;
+        for (const dir of this.directions) {
+            const newX = position.x + dir.dx;
+            const newY = position.y + dir.dy;
             if (this.isValid(newX, newY)) {
                 this.maze[newY][newX] = 0;
                 break;
@@ -379,12 +290,10 @@ export class Level {
     closeUnusedBorderOpenings() {
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
-                if (this.isBorderCell(x, y) && this.maze[y][x] === 0) {
-                    // Si ce n'est ni l'entrée ni la sortie, fermer l'ouverture
-                    if (!((x === this.entrance.x && y === this.entrance.y) || 
-                          (x === this.exit.x && y === this.exit.y))) {
-                        this.maze[y][x] = 1;
-                    }
+                if (this.isBorderCell(x, y) && this.maze[y][x] === 0 &&
+                    !(x === this.entrance.x && y === this.entrance.y) && 
+                    !(x === this.exit.x && y === this.exit.y)) {
+                    this.maze[y][x] = 1;
                 }
             }
         }
@@ -394,38 +303,15 @@ export class Level {
         return x === 0 || x === this.width - 1 || y === 0 || y === this.height - 1;
     }
 
-    getOppositeExit() {
-        let x, y;
-        if (this.entrance.x === 0) {
-            x = this.width - 1;
-            y = Math.floor(Math.random() * (this.height - 2)) + 1;
-        } else if (this.entrance.x === this.width - 1) {
-            x = 0;
-            y = Math.floor(Math.random() * (this.height - 2)) + 1;
-        } else if (this.entrance.y === 0) {
-            y = this.height - 1;
-            x = Math.floor(Math.random() * (this.width - 2)) + 1;
-        } else {
-            y = 0;
-            x = Math.floor(Math.random() * (this.width - 2)) + 1;
-        }
-        return { x, y };
-    }
-
     removeDeadEnds() {
         for (let y = 1; y < this.height - 1; y++) {
             for (let x = 1; x < this.width - 1; x++) {
                 if (this.maze[y][x] === 0) {
-                    let wallCount = 0;
-                    if (this.maze[y-1][x] === 1) wallCount++;
-                    if (this.maze[y+1][x] === 1) wallCount++;
-                    if (this.maze[y][x-1] === 1) wallCount++;
-                    if (this.maze[y][x+1] === 1) wallCount++;
+                    const wallCount = this.directions.reduce((count, dir) => 
+                        count + (this.maze[y + dir.dy][x + dir.dx] === 1 ? 1 : 0), 0);
 
                     if (wallCount >= 3) {
-                        // Enlever un mur aléatoirement
-                        const directions = [{dx: 0, dy: 1}, {dx: 1, dy: 0}, {dx: 0, dy: -1}, {dx: -1, dy: 0}];
-                        const openDir = directions[Math.floor(Math.random() * directions.length)];
+                        const openDir = this.directions[Math.floor(Math.random() * this.directions.length)];
                         this.maze[y + openDir.dy][x + openDir.dx] = 0;
                     }
                 }
@@ -438,17 +324,9 @@ export class Level {
     }
 
     getNeighbors(cell) {
-        const neighbors = [];
-        const directions = [{dx: 0, dy: 1}, {dx: 1, dy: 0}, {dx: 0, dy: -1}, {dx: -1, dy: 0}];
-        
-        for (const dir of directions) {
-            const newX = cell.x + dir.dx;
-            const newY = cell.y + dir.dy;
-            if (this.isValid(newX, newY) && this.maze[newY][newX] === 0) {
-                neighbors.push({x: newX, y: newY});
-            }
-        }
-        return neighbors;
+        return this.directions
+            .map(dir => ({ x: cell.x + dir.dx, y: cell.y + dir.dy }))
+            .filter(newCell => this.isValid(newCell.x, newCell.y) && this.maze[newCell.y][newCell.x] === 0);
     }
 
     draw(ctx) {
@@ -464,13 +342,21 @@ export class Level {
         }
     
         // Dessiner les fleurs
-        for (let flower of this.flowers) {
+        for (const flower of this.flowers) {
             drawFlower(ctx, flower.x, flower.y, flower.type);
         }
 
         // Dessiner les étangs
-        for (let pond of this.ponds) {
+        for (const pond of this.ponds) {
             drawPond(ctx, pond.x, pond.y, pond.width, pond.height);
         }
+    }
+
+    ensureEntrancePathway() {
+        this.ensurePathway(this.entrance);
+    }
+
+    ensureExitPathway() {
+        this.ensurePathway(this.exit);
     }
 }

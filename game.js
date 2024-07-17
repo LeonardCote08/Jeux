@@ -16,9 +16,11 @@ export class Game {
         
         // Pré-calcul du pattern d'herbe pour optimiser le rendu
         this.grassPattern = this.createGrassPattern();
+        
+        // Pré-calcul des positions de cellules pour optimiser les collisions
+        this.cellPositions = this.precalculateCellPositions();
     }
 
-    // Crée et met en cache le pattern d'herbe pour une utilisation répétée
     createGrassPattern() {
         const patternCanvas = document.createElement('canvas');
         patternCanvas.width = grassTexture.width;
@@ -28,6 +30,22 @@ export class Game {
         return this.ctx.createPattern(patternCanvas, 'repeat');
     }
 
+    precalculateCellPositions() {
+        const positions = new Array(CONFIG.gridHeight);
+        for (let y = 0; y < CONFIG.gridHeight; y++) {
+            positions[y] = new Array(CONFIG.gridWidth);
+            for (let x = 0; x < CONFIG.gridWidth; x++) {
+                positions[y][x] = {
+                    left: x * CONFIG.cellSize,
+                    top: y * CONFIG.cellSize,
+                    right: (x + 1) * CONFIG.cellSize,
+                    bottom: (y + 1) * CONFIG.cellSize
+                };
+            }
+        }
+        return positions;
+    }
+
     startNewGame() {
         this.currentLevelNumber = 1;
         this.generateNewLevel();
@@ -35,9 +53,8 @@ export class Game {
 
     generateNewLevel(entrancePos = null) {
         this.level = new Level(CONFIG.gridWidth, CONFIG.gridHeight, entrancePos);
-        this.level.generate(); // Assurez-vous que cette ligne est présente et exécutée
+        this.level.generate();
         
-        // Calcul optimisé de la position de départ du joueur
         const inset = CONFIG.cellSize * 0.1;
         const playerStartX = this.level.entrance.x === 0 ? inset : 
                              this.level.entrance.x === CONFIG.gridWidth - 1 ? (CONFIG.gridWidth - 1) * CONFIG.cellSize - inset :
@@ -70,14 +87,12 @@ export class Game {
         this.generateNewLevel(entrancePos);
     }
 
-    // Vérification optimisée de l'atteinte de la sortie
     hasReachedExit() {
         const playerCellX = Math.floor(this.player.x / CONFIG.cellSize);
         const playerCellY = Math.floor(this.player.y / CONFIG.cellSize);
         return playerCellX === this.level.exit.x && playerCellY === this.level.exit.y;
     }
 
-    // Gestion optimisée du mouvement du joueur
     movePlayer(input, deltaTime) {
         const baseSpeed = (CONFIG.playerSpeed * deltaTime) / 16;
         const speedFactor = this.player.getSpeedFactor();
@@ -89,14 +104,12 @@ export class Game {
         if (input.up) dy -= speed;
         if (input.down) dy += speed;
     
-        // Normalisation du mouvement diagonal
         if (dx !== 0 && dy !== 0) {
             const factor = 1 / Math.sqrt(2);
             dx *= factor;
             dy *= factor;
         }
     
-        // Appliquer le mouvement avec gestion des collisions
         this.applyMovement(dx, dy);
     
         this.player.isMoving = (dx !== 0 || dy !== 0);
@@ -105,14 +118,13 @@ export class Game {
             this.player.updateDirection(dx, dy);
         }
     
-        // Gestion du saut
         if (input.jump) {
             this.player.jump();
         }
     }
     
     applyMovement(dx, dy) {
-        const steps = 4; // Nombre d'étapes pour le mouvement progressif
+        const steps = 4;
         const stepX = dx / steps;
         const stepY = dy / steps;
     
@@ -136,12 +148,11 @@ export class Game {
             }
     
             if (collisionX && collisionY) {
-                break; // Arrêter le mouvement si collision dans les deux directions
+                break;
             }
         }
     }
 
-    // Système de collision optimisé
     checkCollision(x, y) {
         const hitboxSize = CONFIG.playerHitboxSize;
         const treeHitboxSize = CONFIG.treeHitboxSize * 0.8;
@@ -165,27 +176,24 @@ export class Game {
         for (let cellY = topCell; cellY <= bottomCell; cellY++) {
             for (let cellX = leftCell; cellX <= rightCell; cellX++) {
                 if (this.isTreeOrWall(cellX, cellY)) {
-                    const treeLeft = cellX * CONFIG.cellSize + treeHitboxOffset;
-                    const treeTop = cellY * CONFIG.cellSize + treeHitboxOffset;
+                    const cell = this.cellPositions[cellY][cellX];
+                    const treeLeft = cell.left + treeHitboxOffset;
+                    const treeTop = cell.top + treeHitboxOffset;
                     const treeRight = treeLeft + treeHitboxSize;
                     const treeBottom = treeTop + treeHitboxSize;
     
-                    // Vérifier la collision
                     if (playerRight > treeLeft && playerLeft < treeRight &&
                         playerBottom > treeTop && playerTop < treeBottom) {
                         collision = true;
     
-                        // Calculer les distances de chevauchement
                         const overlapLeft = playerRight - treeLeft;
                         const overlapRight = treeRight - playerLeft;
                         const overlapTop = playerBottom - treeTop;
                         const overlapBottom = treeBottom - playerTop;
     
-                        // Trouver la plus petite distance de chevauchement
                         const minOverlapX = Math.min(overlapLeft, overlapRight);
                         const minOverlapY = Math.min(overlapTop, overlapBottom);
     
-                        // Ajuster la direction de glissement
                         if (minOverlapX < minOverlapY) {
                             slideX = (overlapLeft < overlapRight) ? -minOverlapX : minOverlapX;
                         } else {
@@ -195,7 +203,7 @@ export class Game {
                 }
             }
         }
-        // Ajout d'un seuil minimal pour le glissement
+        
         const minSlideThreshold = 0.1;
         if (Math.abs(slideX) < minSlideThreshold) slideX = 0;
         if (Math.abs(slideY) < minSlideThreshold) slideY = 0;
@@ -209,21 +217,14 @@ export class Game {
                 this.level.maze[y][x] === 1);
     }
 
-    // Méthode de rendu optimisée
     draw() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // Utilisation du pattern d'herbe pré-calculé
         this.ctx.fillStyle = this.grassPattern;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Rendu optimisé du niveau
         this.level.draw(this.ctx);
         
-        // Rendu du joueur
         this.player.draw(this.ctx, this.playerSprites, this.playerShadows);
         
-        // Affichage du numéro de niveau
         this.ctx.fillStyle = 'white';
         this.ctx.font = '20px Arial';
         this.ctx.fillText(`Niveau: ${this.currentLevelNumber}`, 10, 30);
