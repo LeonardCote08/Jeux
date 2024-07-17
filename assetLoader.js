@@ -21,7 +21,9 @@ let appleTreeImage;
 let appleTreeShadowImage;
 let flowerImages = {};
 let pondImage;
-let pondSidesImage;
+let pondSidesImages = [];
+let waterAnimationFrame = 0;
+const ANIMATION_SPEED = 500; // Changement d'image toutes les 500ms
 export let grassTexture;
 
 export async function loadAssets() {
@@ -30,8 +32,7 @@ export async function loadAssets() {
         loadTreeImages(),
         loadFlowerImages(),
         loadGrassTexture(),
-        loadPondImage(),
-        loadPondSidesImage()
+        loadPondSidesImages()
     ]);
 }
 
@@ -151,6 +152,15 @@ export function drawPond(ctx, x, y, width, height) {
     }
 }
 
+export function updateWaterAnimation() {
+    waterAnimationFrame = (waterAnimationFrame + 1) % pondSidesImages.length;
+}
+
+// Fonction pour démarrer l'animation de l'eau
+export function startWaterAnimation() {
+    setInterval(updateWaterAnimation, ANIMATION_SPEED);
+}
+
 // Charge la texture de l'herbe
 async function loadGrassTexture() {
     grassTexture = await loadImage('Assets/GrassTexture.png');
@@ -166,20 +176,20 @@ export function drawTreeBlock(ctx, x, y, isAppleTree) {
     ctx.drawImage(isAppleTree ? appleTreeImage : treeImage, drawX, drawY, size, size);
 }
 
-async function loadPondSidesImage() {
-    pondSidesImage = await loadImage('Assets/props/water/WaterSides1.png');
+async function loadPondSidesImages() {
+    pondSidesImages.push(await loadImage('Assets/props/water/WaterSides1.png'));
+    pondSidesImages.push(await loadImage('Assets/props/water/WaterSides2.png'));
 }
 
 // Nouvelle fonction pour dessiner une partie spécifique de l'étang
 function drawPondPart(ctx, x, y, partX, partY) {
     const partSize = 8; // Chaque partie fait 8x8 pixels
     ctx.drawImage(
-        pondSidesImage,
+        pondSidesImages[waterAnimationFrame],
         partX * partSize, partY * partSize, partSize, partSize,
         x, y, partSize, partSize
     );
 }
-
 export function drawFlower(ctx, x, y, flowerType) {
     const drawX = x * CONFIG.cellSize;
     const drawY = y * CONFIG.cellSize;

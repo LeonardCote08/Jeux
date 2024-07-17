@@ -1,6 +1,6 @@
 import { CONFIG } from './config.js';
 import { Game } from './game.js';
-import { loadAssets, playerSprites, playerShadows } from './assetLoader.js';
+import { loadAssets, playerSprites, playerShadows, updateWaterAnimation } from './assetLoader.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -48,6 +48,7 @@ function gameLoop(currentTime) {
     };
 
     game.update(input, currentTime);
+    updateWaterAnimation(); // Mettre à jour l'animation de l'eau
     game.draw();
     
     if (jumpRequested) {

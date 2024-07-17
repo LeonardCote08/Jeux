@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { drawTreeBlock, drawFlower, drawPond } from './assetLoader.js';
+import { drawTreeBlock, drawFlower, drawPond, startWaterAnimation } from './assetLoader.js';
 import { PriorityQueue } from './PriorityQueue.js';
 
 export class Level {
@@ -12,9 +12,10 @@ export class Level {
         this.exit = null;
         this.flowers = [];
         this.clearings = [];
-        this.ponds = []; // Propriété pour stocker les étangs
-        this.minPondSize = 24; // Taille minimale d'un étang
-        this.maxPondSize = 48; // Taille maximale d'un étang
+        this.ponds = [];
+        this.minPondSize = 24;
+        this.maxPondSize = 48;
+        startWaterAnimation(); // Démarrer l'animation de l'eau
         this.minPathLength = Math.floor(Math.max(width, height) * 1.5);
         
         
