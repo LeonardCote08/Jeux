@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
 import { drawTreeBlock, drawFlower } from './assetLoader.js';
+import { PriorityQueue } from './PriorityQueue.js';
 
 export class Level {
     constructor(width, height, entrancePos = null) {
@@ -10,6 +11,7 @@ export class Level {
         this.exit = null;
         this.flowers = [];
         this.clearings = [];
+        this.minPathLength = Math.floor(Math.max(width, height) * 1.5); // Augmenté pour un chemin plus long
     }
 
     generate() {
@@ -20,22 +22,17 @@ export class Level {
         this.ensureEntrancePathway();
         this.ensureExitPathway();
         this.addRandomFlowers();
+        this.removeDeadEnds();
+        this.closeUnusedBorderOpenings(); // Nouvelle méthode pour fermer les ouvertures inutilisées
     }
 
     initializeMaze() {
-        // Create the outer border
         this.maze = Array(this.height).fill().map((_, y) => 
             Array(this.width).fill().map((_, x) => 
-                (x === 0 || x === this.width - 1 || y === 0 || y === this.height - 1) ? 1 : 0
+                (x === 0 || x === this.width - 1 || y === 0 || y === this.height - 1) ? 1 : 
+                (Math.random() < 0.3 ? 1 : 0) // 30% de chance d'avoir un arbre à l'intérieur
             )
         );
-
-        // Fill the interior with walls (1s)
-        for (let y = 1; y < this.height - 1; y++) {
-            for (let x = 1; x < this.width - 1; x++) {
-                this.maze[y][x] = 1;
-            }
-        }
     }
 
     addRandomFlowers() {
@@ -52,29 +49,43 @@ export class Level {
         }
     }
 
-    carvePathways() {
-        let startX = 1 + 2 * Math.floor(Math.random() * ((this.width - 3) / 2));
-        let startY = 1 + 2 * Math.floor(Math.random() * ((this.height - 3) / 2));
-        this.maze[startY][startX] = 0;
-
-        let walls = this.getNeighbors(startX, startY);
-        while (walls.length > 0) {
-            let wallIndex = Math.floor(Math.random() * walls.length);
-            let wall = walls[wallIndex];
-            let { x, y, wx, wy } = wall;
-
-            if (this.maze[y][x] === 1) {
-                this.maze[y][x] = 0;
-                this.maze[wy][wx] = 0;
-
-                // Chance de créer un passage plus large
-                if (Math.random() < 0.3) { // 30% de chance
-                    this.widenPassage(x, y);
-                }
-
-                walls.push(...this.getNeighbors(x, y));
+    getUnvisitedNeighbors(cell) {
+        const neighbors = [];
+        const directions = [{dx: 0, dy: 2}, {dx: 2, dy: 0}, {dx: 0, dy: -2}, {dx: -2, dy: 0}];
+        
+        for (const dir of directions) {
+            const newX = cell.x + dir.dx;
+            const newY = cell.y + dir.dy;
+            if (this.isValid(newX, newY) && this.maze[newY][newX] === 1) {
+                neighbors.push({x: newX, y: newY});
             }
-            walls.splice(wallIndex, 1);
+        }
+        return neighbors.sort(() => Math.random() - 0.5); // Mélanger les voisins
+    }
+
+    carvePathways() {
+        const stack = [{ x: 1, y: 1 }];
+        const visited = new Set();
+
+        while (stack.length > 0) {
+            const current = stack.pop();
+            const key = `${current.x},${current.y}`;
+
+            if (!visited.has(key)) {
+                visited.add(key);
+                this.maze[current.y][current.x] = 0; // Creuser le chemin
+
+                const neighbors = this.getUnvisitedNeighbors(current);
+                for (const neighbor of neighbors) {
+                    stack.push(neighbor);
+                    // 50% de chance d'élargir le passage
+                    if (Math.random() < 0.5) {
+                        const midX = (current.x + neighbor.x) / 2;
+                        const midY = (current.y + neighbor.y) / 2;
+                        this.maze[Math.floor(midY)][Math.floor(midX)] = 0;
+                    }
+                }
+            }
         }
     }
 
@@ -90,7 +101,7 @@ export class Level {
     }
 
     createClearings() {
-        const numClearings = Math.floor(Math.random() * 4) + 3; // 3 à 6 clairières
+        const numClearings = Math.floor(Math.random() * 3) + 3; // 3 à 5 clairières
         for (let i = 0; i < numClearings; i++) {
             this.createClearing();
         }
@@ -98,21 +109,12 @@ export class Level {
 
     createClearing() {
         let attempts = 0;
-        while (attempts < 50) { // Limite les tentatives pour éviter une boucle infinie
-            let x = Math.floor(Math.random() * (this.width - 3)) + 2;
-            let y = Math.floor(Math.random() * (this.height - 3)) + 2;
+        while (attempts < 50) {
+            let x = Math.floor(Math.random() * (this.width - 5)) + 2;
+            let y = Math.floor(Math.random() * (this.height - 5)) + 2;
             
             if (this.canCreateClearing(x, y)) {
-                // Nouvelle logique pour déterminer la taille de la clairière
-                let size;
-                const randomValue = Math.random();
-                if (randomValue < 0.5) {
-                    size = 2; // 50% de chance d'avoir une clairière 2x2
-                } else if (randomValue < 0.8) {
-                    size = 3; // 30% de chance d'avoir une clairière 3x3
-                } else {
-                    size = 4; // 20% de chance d'avoir une clairière 4x4
-                }
+                const size = Math.random() < 0.7 ? 3 : 4; // 70% de chance d'avoir une clairière 3x3, sinon 4x4
 
                 for (let dy = 0; dy < size; dy++) {
                     for (let dx = 0; dx < size; dx++) {
@@ -140,17 +142,127 @@ export class Level {
     }
 
     openEntranceAndExit() {
+        // Ouvrir l'entrée
         this.maze[this.entrance.y][this.entrance.x] = 0;
-        this.exit = this.getOppositeExit();
+        
+        // Trouver et ouvrir la sortie
+        this.exit = this.getValidExitPosition();
         this.maze[this.exit.y][this.exit.x] = 0;
     }
 
     getValidExitPosition() {
         let exitPos;
+        let attempts = 0;
+        const maxAttempts = 200; // Augmenté pour plus de tentatives
+
         do {
             exitPos = this.getRandomBorderPosition();
-        } while (this.getDistance(this.entrance, exitPos) < CONFIG.minEntranceExitDistance);
+            attempts++;
+            if (attempts >= maxAttempts) {
+                console.warn("Impossible de trouver une sortie valide après " + maxAttempts + " tentatives. Utilisation de la dernière position générée.");
+                break;
+            }
+        } while (!this.isValidExit(exitPos));
+
         return exitPos;
+    }
+
+    isValidExit(exitPos) {
+        if (exitPos.x === this.entrance.x && exitPos.y === this.entrance.y) {
+            return false;
+        }
+
+        const pathLength = this.getPathLength(this.entrance, exitPos);
+        return pathLength >= this.minPathLength;
+    }
+
+    reconstructPath(cameFrom, current) {
+        const path = [current];
+        while (cameFrom[`${current.x},${current.y}`]) {
+            current = cameFrom[`${current.x},${current.y}`];
+            path.unshift(current);
+        }
+        return path;
+    }
+
+    getPathLength(start, end) {
+        const queue = new PriorityQueue();
+        const visited = new Set();
+        const distances = {};
+
+        distances[`${start.x},${start.y}`] = 0;
+        queue.enqueue(start, 0);
+
+        while (!queue.isEmpty()) {
+            const current = queue.dequeue();
+            const currentKey = `${current.x},${current.y}`;
+
+            if (current.x === end.x && current.y === end.y) {
+                return distances[currentKey];
+            }
+
+            if (visited.has(currentKey)) continue;
+            visited.add(currentKey);
+
+            const neighbors = this.getNeighbors(current);
+            for (const neighbor of neighbors) {
+                const neighborKey = `${neighbor.x},${neighbor.y}`;
+                const newDistance = distances[currentKey] + 1;
+
+                if (!distances[neighborKey] || newDistance < distances[neighborKey]) {
+                    distances[neighborKey] = newDistance;
+                    const priority = newDistance + this.heuristic(neighbor, end);
+                    queue.enqueue(neighbor, priority);
+                }
+            }
+        }
+
+        return Infinity; // Aucun chemin trouvé
+    }
+
+    getPathDistance(start, end) {
+        const openSet = new PriorityQueue();
+        const closedSet = new Set();
+        const gScore = {};
+        const fScore = {};
+        const cameFrom = {};
+
+        gScore[`${start.x},${start.y}`] = 0;
+        fScore[`${start.x},${start.y}`] = this.heuristic(start, end);
+        openSet.enqueue(start, fScore[`${start.x},${start.y}`]);
+
+        while (!openSet.isEmpty()) {
+            const current = openSet.dequeue();
+
+            if (current.x === end.x && current.y === end.y) {
+                return this.reconstructPath(cameFrom, current).length - 1;
+            }
+
+            closedSet.add(`${current.x},${current.y}`);
+
+            for (const neighbor of this.getNeighbors(current)) {
+                if (closedSet.has(`${neighbor.x},${neighbor.y}`)) continue;
+
+                const tentativeGScore = gScore[`${current.x},${current.y}`] + 1;
+
+                if (!openSet.contains(neighbor) || tentativeGScore < gScore[`${neighbor.x},${neighbor.y}`]) {
+                    cameFrom[`${neighbor.x},${neighbor.y}`] = current;
+                    gScore[`${neighbor.x},${neighbor.y}`] = tentativeGScore;
+                    fScore[`${neighbor.x},${neighbor.y}`] = gScore[`${neighbor.x},${neighbor.y}`] + this.heuristic(neighbor, end);
+
+                    if (!openSet.contains(neighbor)) {
+                        openSet.enqueue(neighbor, fScore[`${neighbor.x},${neighbor.y}`]);
+                    }
+                }
+            }
+        }
+
+        // Aucun chemin trouvé
+        return Infinity;
+    }
+
+    heuristic(a, b) {
+        return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
     }
 
     ensureEntrancePathway() {
@@ -193,6 +305,24 @@ export class Level {
         return { x, y };
     }
 
+    closeUnusedBorderOpenings() {
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                if (this.isBorderCell(x, y) && this.maze[y][x] === 0) {
+                    // Si ce n'est ni l'entrée ni la sortie, fermer l'ouverture
+                    if (!((x === this.entrance.x && y === this.entrance.y) || 
+                          (x === this.exit.x && y === this.exit.y))) {
+                        this.maze[y][x] = 1;
+                    }
+                }
+            }
+        }
+    }
+
+    isBorderCell(x, y) {
+        return x === 0 || x === this.width - 1 || y === 0 || y === this.height - 1;
+    }
+
     getOppositeExit() {
         let x, y;
         if (this.entrance.x === 0) {
@@ -211,20 +341,43 @@ export class Level {
         return { x, y };
     }
 
+    removeDeadEnds() {
+        for (let y = 1; y < this.height - 1; y++) {
+            for (let x = 1; x < this.width - 1; x++) {
+                if (this.maze[y][x] === 0) {
+                    let wallCount = 0;
+                    if (this.maze[y-1][x] === 1) wallCount++;
+                    if (this.maze[y+1][x] === 1) wallCount++;
+                    if (this.maze[y][x-1] === 1) wallCount++;
+                    if (this.maze[y][x+1] === 1) wallCount++;
+
+                    if (wallCount >= 3) {
+                        // Enlever un mur aléatoirement
+                        const directions = [{dx: 0, dy: 1}, {dx: 1, dy: 0}, {dx: 0, dy: -1}, {dx: -1, dy: 0}];
+                        const openDir = directions[Math.floor(Math.random() * directions.length)];
+                        this.maze[y + openDir.dy][x + openDir.dx] = 0;
+                    }
+                }
+            }
+        }
+    }
+
     isValid(x, y) {
         return x > 0 && x < this.width - 1 && y > 0 && y < this.height - 1;
     }
 
-    getNeighbors(x, y) {
-        const directions = [{dx: -1, dy: 0}, {dx: 1, dy: 0}, {dx: 0, dy: -1}, {dx: 0, dy: 1}];
-        return directions
-            .map(dir => ({
-                x: x + dir.dx * 2,
-                y: y + dir.dy * 2,
-                wx: x + dir.dx,
-                wy: y + dir.dy
-            }))
-            .filter(({x, y}) => this.isValid(x, y));
+    getNeighbors(cell) {
+        const neighbors = [];
+        const directions = [{dx: 0, dy: 1}, {dx: 1, dy: 0}, {dx: 0, dy: -1}, {dx: -1, dy: 0}];
+        
+        for (const dir of directions) {
+            const newX = cell.x + dir.dx;
+            const newY = cell.y + dir.dy;
+            if (this.isValid(newX, newY) && this.maze[newY][newX] === 0) {
+                neighbors.push({x: newX, y: newY});
+            }
+        }
+        return neighbors;
     }
 
     draw(ctx) {

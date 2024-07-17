@@ -5,7 +5,7 @@ export class Player {
         this.x = x;
         this.y = y;
         this.direction = 'downRight';
-        this.lastHorizontalDirection = 'Right'; // Nouvelle propriété
+        this.lastHorizontalDirection = 'Right';
         this.isMoving = false;
         this.isJumping = false;
         this.jumpHeight = 0;
@@ -13,7 +13,11 @@ export class Player {
         this.jumpSpeed = 2;
         this.animationFrame = 0;
         this.lastFrameTime = 0;
-        this.frameDuration = 100;
+        this.frameDuration = {
+            idle: 200,
+            walk: 200,
+            jump: 100
+        };
         this.totalFrames = {
             walk: 6,
             jump: 6,
@@ -22,11 +26,10 @@ export class Player {
         this.jumpFrame = 0;
         this.jumpCycleComplete = false;
         this.lastMoveTime = 0;
-        this.idleThreshold = 1000; // 1 seconde sans mouvement pour passer en idle
+        this.idleThreshold = 1000;
         this.idleCycleComplete = false;
-        this.idlePauseDuration = 2000; // 2 secondes de pause entre les cycles idle
+        this.idlePauseDuration = 2000;
         this.lastIdleCycleTime = 0;
-        
     }
 
     jump() {
@@ -57,8 +60,11 @@ export class Player {
     }
 
     updateAnimation(currentTime) {
+        let currentFrameDuration = this.isJumping ? this.frameDuration.jump : 
+                                   (this.isMoving ? this.frameDuration.walk : this.frameDuration.idle);
+        
         const elapsed = currentTime - this.lastFrameTime;
-        if (elapsed >= this.frameDuration) {
+        if (elapsed >= currentFrameDuration) {
             this.lastFrameTime = currentTime;
 
             if (this.isJumping) {
@@ -72,6 +78,7 @@ export class Player {
             }
         }
     }
+
 
     updateIdleAnimation(currentTime) {
         if (currentTime - this.lastMoveTime <= this.idleThreshold) {
