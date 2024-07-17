@@ -38,12 +38,14 @@ export class Player {
     }
 
     jump() {
-        if (!this.isJumping) {
+        if (!this.isJumping && this.canJump) {
             this.isJumping = true;
             this.jumpFrame = 0;
             this.jumpCycleComplete = false;
-            this.isJumpBoosting = true; // Activer le boost au début du saut
-            this.canJump = false; // Empêcher un nouveau saut pendant l'animation
+            this.isJumpBoosting = true;
+            this.canJump = false;
+            // Ajouter un petit délai avant de pouvoir sauter à nouveau
+            setTimeout(() => { this.canJump = true; }, 200);
         }
     }
 
@@ -121,19 +123,12 @@ export class Player {
         }
     }
 
-    updateJumpAnimation(currentTime) {
+    updateJumpAnimation() {
         if (this.jumpCycleComplete) {
             this.isJumping = false;
             this.jumpHeight = 0;
             this.jumpFrame = 0;
-            this.isJumpBoosting = false; // Désactiver le boost à la fin du saut
-            
-            // Vérifier si une demande de saut a été faite pendant l'animation
-            if (currentTime - this.lastJumpRequestTime < this.jumpBufferDuration) {
-                this.jump();
-            } else {
-                this.canJump = true; // Autoriser un nouveau saut
-            }
+            this.isJumpBoosting = false;
             return;
         }
 

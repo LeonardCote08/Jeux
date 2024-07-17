@@ -11,25 +11,28 @@ canvas.height = CONFIG.cellSize * CONFIG.gridHeight;
 ctx.imageSmoothingEnabled = false;
 
 const keysPressed = new Set();
+let jumpRequested = false;
 
 function handleKeyDown(e) {
     const key = e.key.toLowerCase();
-    if (['arrowleft', 'a'].includes(key)) keysPressed.add('left');
-    if (['arrowright', 'd'].includes(key)) keysPressed.add('right');
-    if (['arrowup', 'w'].includes(key)) keysPressed.add('up');
-    if (['arrowdown', 's'].includes(key)) keysPressed.add('down');
+    if (['arrowleft', 'a', 'arrowright', 'd', 'arrowup', 'w', 'arrowdown', 's'].includes(key)) {
+        keysPressed.add(key);
+        e.preventDefault();
+    }
     if (key === ' ') {
-        e.preventDefault(); // Empêche le défilement de la page
-        game.player.jump();
+        jumpRequested = true;
+        e.preventDefault();
     }
 }
 
 function handleKeyUp(e) {
     const key = e.key.toLowerCase();
-    if (['arrowleft', 'a'].includes(key)) keysPressed.delete('left');
-    if (['arrowright', 'd'].includes(key)) keysPressed.delete('right');
-    if (['arrowup', 'w'].includes(key)) keysPressed.delete('up');
-    if (['arrowdown', 's'].includes(key)) keysPressed.delete('down');
+    if (['arrowleft', 'a', 'arrowright', 'd', 'arrowup', 'w', 'arrowdown', 's'].includes(key)) {
+        keysPressed.delete(key);
+    }
+    if (key === ' ') {
+        jumpRequested = false;
+    }
 }
 
 document.addEventListener('keydown', handleKeyDown);
@@ -38,14 +41,25 @@ document.addEventListener('keyup', handleKeyUp);
 let game;
 
 function gameLoop(currentTime) {
-    game.update(keysPressed, currentTime);
+    const input = {
+        left: keysPressed.has('arrowleft') || keysPressed.has('a'),
+        right: keysPressed.has('arrowright') || keysPressed.has('d'),
+        up: keysPressed.has('arrowup') || keysPressed.has('w'),
+        down: keysPressed.has('arrowdown') || keysPressed.has('s'),
+        jump: jumpRequested
+    };
+
+    game.update(input, currentTime);
     game.draw();
+    
+    jumpRequested = false; // Réinitialiser la demande de saut après chaque frame
     requestAnimationFrame(gameLoop);
 }
 
+
 async function initGame() {
     try {
-        await loadAssets(); // Assurez-vous que cette ligne est présente et attendue
+        await loadAssets();
         game = new Game(canvas, ctx, playerSprites, playerShadows);
         game.startNewGame();
         requestAnimationFrame(gameLoop);

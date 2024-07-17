@@ -49,11 +49,11 @@ export class Game {
         this.player = new Player(playerStartX, playerStartY);
     }
 
-    update(keysPressed, currentTime) {
+    update(input, currentTime) {
         const deltaTime = currentTime - this.lastUpdateTime;
         this.lastUpdateTime = currentTime;
     
-        this.movePlayer(keysPressed, deltaTime);
+        this.movePlayer(input, deltaTime);
         this.player.updateAnimation(currentTime);
 
         if (this.hasReachedExit()) {
@@ -78,16 +78,16 @@ export class Game {
     }
 
     // Gestion optimisée du mouvement du joueur
-    movePlayer(keysPressed, deltaTime) {
+    movePlayer(input, deltaTime) {
         const baseSpeed = (CONFIG.playerSpeed * deltaTime) / 16;
         const speedFactor = this.player.getSpeedFactor();
         const speed = baseSpeed * speedFactor;
         
         let dx = 0, dy = 0;
-        if (keysPressed.has('left')) dx -= speed;
-        if (keysPressed.has('right')) dx += speed;
-        if (keysPressed.has('up')) dy -= speed;
-        if (keysPressed.has('down')) dy += speed;
+        if (input.left) dx -= speed;
+        if (input.right) dx += speed;
+        if (input.up) dy -= speed;
+        if (input.down) dy += speed;
     
         // Normalisation du mouvement diagonal
         if (dx !== 0 && dy !== 0) {
@@ -111,6 +111,11 @@ export class Game {
         if (this.player.isMoving) {
             this.player.lastMoveTime = performance.now();
             this.player.updateDirection(dx, dy);
+        }
+
+        // Gestion du saut
+        if (input.jump) {
+            this.player.jump();
         }
     }
 
