@@ -9,4 +9,5 @@ export const CONFIG = {
     spriteSize: 64,
     playerHitboxSize: 20,
     treeHitboxSize: 28  // Nouvelle constante pour la hitbox des arbres (légèrement plus petite que cellSize)
+    
 };
