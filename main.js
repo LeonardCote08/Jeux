@@ -45,7 +45,7 @@ function gameLoop(currentTime) {
 
 async function initGame() {
     try {
-        await loadAssets();
+        await loadAssets(); // Assurez-vous que cette ligne est présente et attendue
         game = new Game(canvas, ctx, playerSprites, playerShadows);
         game.startNewGame();
         requestAnimationFrame(gameLoop);

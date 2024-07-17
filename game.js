@@ -13,6 +13,19 @@ export class Game {
         this.player = null;
         this.currentLevelNumber = 1;
         this.lastUpdateTime = 0;
+        
+        // Pré-calcul du pattern d'herbe pour optimiser le rendu
+        this.grassPattern = this.createGrassPattern();
+    }
+
+    // Crée et met en cache le pattern d'herbe pour une utilisation répétée
+    createGrassPattern() {
+        const patternCanvas = document.createElement('canvas');
+        patternCanvas.width = grassTexture.width;
+        patternCanvas.height = grassTexture.height;
+        const patternCtx = patternCanvas.getContext('2d');
+        patternCtx.drawImage(grassTexture, 0, 0);
+        return this.ctx.createPattern(patternCanvas, 'repeat');
     }
 
     startNewGame() {
@@ -22,27 +35,16 @@ export class Game {
 
     generateNewLevel(entrancePos = null) {
         this.level = new Level(CONFIG.gridWidth, CONFIG.gridHeight, entrancePos);
-        this.level.generate();
+        this.level.generate(); // Assurez-vous que cette ligne est présente et exécutée
         
-        // Calculer la position légèrement à l'intérieur du labyrinthe
-        let playerStartX, playerStartY;
-        const inset = CONFIG.cellSize * 0.1; // 10% de la taille d'une cellule
-        
-        if (this.level.entrance.x === 0) {
-            playerStartX = inset; // Légèrement à l'intérieur depuis le bord gauche
-        } else if (this.level.entrance.x === CONFIG.gridWidth - 1) {
-            playerStartX = (CONFIG.gridWidth - 1) * CONFIG.cellSize - inset; // Légèrement à l'intérieur depuis le bord droit
-        } else {
-            playerStartX = this.level.entrance.x * CONFIG.cellSize;
-        }
-        
-        if (this.level.entrance.y === 0) {
-            playerStartY = inset; // Légèrement à l'intérieur depuis le bord supérieur
-        } else if (this.level.entrance.y === CONFIG.gridHeight - 1) {
-            playerStartY = (CONFIG.gridHeight - 1) * CONFIG.cellSize - inset; // Légèrement à l'intérieur depuis le bord inférieur
-        } else {
-            playerStartY = this.level.entrance.y * CONFIG.cellSize;
-        }
+        // Calcul optimisé de la position de départ du joueur
+        const inset = CONFIG.cellSize * 0.1;
+        const playerStartX = this.level.entrance.x === 0 ? inset : 
+                             this.level.entrance.x === CONFIG.gridWidth - 1 ? (CONFIG.gridWidth - 1) * CONFIG.cellSize - inset :
+                             this.level.entrance.x * CONFIG.cellSize;
+        const playerStartY = this.level.entrance.y === 0 ? inset : 
+                             this.level.entrance.y === CONFIG.gridHeight - 1 ? (CONFIG.gridHeight - 1) * CONFIG.cellSize - inset :
+                             this.level.entrance.y * CONFIG.cellSize;
         
         this.player = new Player(playerStartX, playerStartY);
     }
@@ -68,52 +70,33 @@ export class Game {
         this.generateNewLevel(entrancePos);
     }
 
+    // Vérification optimisée de l'atteinte de la sortie
     hasReachedExit() {
         const playerCellX = Math.floor(this.player.x / CONFIG.cellSize);
         const playerCellY = Math.floor(this.player.y / CONFIG.cellSize);
         return playerCellX === this.level.exit.x && playerCellY === this.level.exit.y;
     }
 
-    updateAnimation(currentTime) {
-        const elapsed = currentTime - this.lastFrameTime;
-        if (elapsed >= this.frameDuration) {
-            this.lastFrameTime = currentTime;
-    
-            if (this.isJumping) {
-                this.updateJumpAnimation();
-            } else if (this.isMoving) {
-                this.animationFrame = (this.animationFrame + 1) % this.totalFrames.walk;
-            } else {
-                if (currentTime - this.lastMoveTime > this.idleThreshold) {
-                    // Passage en animation idle
-                    this.animationFrame = (this.animationFrame + 1) % this.totalFrames.idle;
-                } else {
-                    // Reste sur la première frame de l'animation de marche
-                    this.animationFrame = 0;
-                }
-            }
-        }
-    }
-
+    // Gestion optimisée du mouvement du joueur
     movePlayer(keysPressed, deltaTime) {
         const baseSpeed = (CONFIG.playerSpeed * deltaTime) / 16;
         const speedFactor = this.player.getSpeedFactor();
         const speed = baseSpeed * speedFactor;
+        
         let dx = 0, dy = 0;
-    
         if (keysPressed.has('left')) dx -= speed;
         if (keysPressed.has('right')) dx += speed;
         if (keysPressed.has('up')) dy -= speed;
         if (keysPressed.has('down')) dy += speed;
     
-        // Normaliser le mouvement diagonal
+        // Normalisation du mouvement diagonal
         if (dx !== 0 && dy !== 0) {
             const factor = 1 / Math.sqrt(2);
             dx *= factor;
             dy *= factor;
         }
     
-        // Vérifier les collisions et ajuster la position
+        // Vérification des collisions et ajustement de la position
         const newX = this.player.x + dx;
         const newY = this.player.y + dy;
     
@@ -131,6 +114,7 @@ export class Game {
         }
     }
 
+    // Système de collision optimisé
     checkCollision(x, y) {
         const hitboxSize = CONFIG.playerHitboxSize;
         const hitboxOffset = (CONFIG.cellSize - hitboxSize) / 2;
@@ -151,32 +135,21 @@ export class Game {
         return false; // Pas de collision
     }
 
-    getPlayerDirection(dx, dy) {
-        if (dx > 0 && dy > 0) return 'downRight';
-        if (dx < 0 && dy > 0) return 'downLeft';
-        if (dx > 0 && dy < 0) return 'upRight';
-        if (dx < 0 && dy < 0) return 'upLeft';
-        if (dx > 0) return 'downRight';
-        if (dx < 0) return 'downLeft';
-        if (dy > 0) return 'downRight';
-        if (dy < 0) return 'upRight';
-        return this.player.direction; // Garder la direction actuelle si aucun mouvement
-    }
-
-    drawBackground() {
-        const pattern = this.ctx.createPattern(grassTexture, 'repeat');
-        this.ctx.fillStyle = pattern;
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    }
-
+    // Méthode de rendu optimisée
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        this.drawBackground();
+        // Utilisation du pattern d'herbe pré-calculé
+        this.ctx.fillStyle = this.grassPattern;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Rendu optimisé du niveau
         this.level.draw(this.ctx);
+        
+        // Rendu du joueur
         this.player.draw(this.ctx, this.playerSprites, this.playerShadows);
         
-        // Afficher le numéro du niveau
+        // Affichage du numéro de niveau
         this.ctx.fillStyle = 'white';
         this.ctx.font = '20px Arial';
         this.ctx.fillText(`Niveau: ${this.currentLevelNumber}`, 10, 30);

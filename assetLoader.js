@@ -14,10 +14,10 @@ export const playerShadows = {
     idleRight: [], idleLeft: [], idleUpRight: [], idleUpLeft: [], idleDownRight: [], idleDownLeft: []
 };
 
+// Variables pour stocker les images des éléments du jeu
 let treeImage;
 let treeShadowImage;
 let flowerImages = {};
-
 export let grassTexture;
 
 export async function loadAssets() {
@@ -52,55 +52,33 @@ async function loadPlayerSprites() {
     const directions = ['downRight', 'downLeft', 'upRight', 'upLeft'];
     
     directions.forEach((dir, i) => {
-        // Chargement des sprites de marche
-        playerSprites[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
-        playerShadows[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
+        // Chargement des sprites de marche, saut et idle pour chaque direction
         for (let j = 0; j < 6; j++) {
-            const sprite = extractSprite(walkSheet, j, i);
-            const shadow = extractSprite(shadowWalkSheet, j, i);
-            playerSprites[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(sprite);
-            playerShadows[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(shadow);
+            playerSprites[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(extractSprite(walkSheet, j, i));
+            playerShadows[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(extractSprite(shadowWalkSheet, j, i));
+            
+            playerSprites[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(extractSprite(jumpSheet, j, i));
+            playerShadows[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(extractSprite(shadowJumpSheet, j, i));
         }
-
-        // Chargement des sprites de saut
-        playerSprites[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
-        playerShadows[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
-        for (let j = 0; j < 6; j++) {
-            const jumpSprite = extractSprite(jumpSheet, j, i);
-            const jumpShadow = extractSprite(shadowJumpSheet, j, i);
-            playerSprites[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(jumpSprite);
-            playerShadows[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(jumpShadow);
-        }
-
-        // Chargement des sprites idle
-        playerSprites[`idle${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
-        playerShadows[`idle${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = [];
+        
         for (let j = 0; j < 16; j++) {
-            const idleSprite = extractSprite(idleSheet, j, i);
-            const idleShadow = extractSprite(shadowIdleSheet, j, i);
-            playerSprites[`idle${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(idleSprite);
-            playerShadows[`idle${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(idleShadow);
+            playerSprites[`idle${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(extractSprite(idleSheet, j, i));
+            playerShadows[`idle${dir.charAt(0).toUpperCase() + dir.slice(1)}`].push(extractSprite(shadowIdleSheet, j, i));
         }
     });
 
     // Ajout des directions droite et gauche
-    playerSprites.right = playerSprites.walkDownRight;
-    playerSprites.left = playerSprites.walkDownLeft;
-    playerSprites.walkRight = playerSprites.walkDownRight;
-    playerSprites.walkLeft = playerSprites.walkDownLeft;
-    playerSprites.jumpRight = playerSprites.jumpDownRight;
-    playerSprites.jumpLeft = playerSprites.jumpDownLeft;
-    playerSprites.idleRight = playerSprites.idleDownRight;
-    playerSprites.idleLeft = playerSprites.idleDownLeft;
+    ['right', 'left'].forEach(dir => {
+        playerSprites[dir] = playerSprites[`walkDown${dir.charAt(0).toUpperCase() + dir.slice(1)}`];
+        playerSprites[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = playerSprites[`walkDown${dir.charAt(0).toUpperCase() + dir.slice(1)}`];
+        playerSprites[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = playerSprites[`jumpDown${dir.charAt(0).toUpperCase() + dir.slice(1)}`];
+        playerSprites[`idle${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = playerSprites[`idleDown${dir.charAt(0).toUpperCase() + dir.slice(1)}`];
 
-    playerShadows.right = playerShadows.walkDownRight;
-    playerShadows.left = playerShadows.walkDownLeft;
-    playerShadows.walkRight = playerShadows.walkDownRight;
-    playerShadows.walkLeft = playerShadows.walkDownLeft;
-    playerShadows.jumpRight = playerShadows.jumpDownRight;
-    playerShadows.jumpLeft = playerShadows.jumpDownLeft;
-    playerShadows.idleRight = playerShadows.idleDownRight;
-    playerShadows.idleLeft = playerShadows.idleDownLeft;
+        playerShadows[dir] = playerShadows[`walkDown${dir.charAt(0).toUpperCase() + dir.slice(1)}`];
+        playerShadows[`walk${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = playerShadows[`walkDown${dir.charAt(0).toUpperCase() + dir.slice(1)}`];
+        playerShadows[`jump${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = playerShadows[`jumpDown${dir.charAt(0).toUpperCase() + dir.slice(1)}`];
+        playerShadows[`idle${dir.charAt(0).toUpperCase() + dir.slice(1)}`] = playerShadows[`idleDown${dir.charAt(0).toUpperCase() + dir.slice(1)}`];
+    });
 }
 
 function loadImage(src) {
@@ -112,6 +90,7 @@ function loadImage(src) {
     });
 }
 
+// Extrait un sprite individuel d'une feuille de sprites
 function extractSprite(sheet, col, row) {
     const canvas = document.createElement('canvas');
     canvas.width = CONFIG.spriteSize;
@@ -131,19 +110,18 @@ function extractSprite(sheet, col, row) {
     return canvas;
 }
 
+// Charge la texture de l'herbe
 async function loadGrassTexture() {
     grassTexture = await loadImage('Assets/GrassTexture.png');
 }
 
+// Fonction pour dessiner un bloc d'arbre
 export function drawTreeBlock(ctx, x, y) {
     const drawX = x * CONFIG.cellSize;
     const drawY = y * CONFIG.cellSize;
     const size = CONFIG.cellSize;
 
-    // Dessiner l'ombre de l'arbre
     ctx.drawImage(treeShadowImage, drawX, drawY, size, size);
-    
-    // Dessiner l'arbre
     ctx.drawImage(treeImage, drawX, drawY, size, size);
 }
 

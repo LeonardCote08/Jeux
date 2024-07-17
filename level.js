@@ -11,7 +11,13 @@ export class Level {
         this.exit = null;
         this.flowers = [];
         this.clearings = [];
-        this.minPathLength = Math.floor(Math.max(width, height) * 1.5); // Augmenté pour un chemin plus long
+        this.minPathLength = Math.floor(Math.max(width, height) * 1.5);
+        
+        // Pré-calcul des directions pour optimiser les boucles
+        this.directions = [
+            {dx: 0, dy: 1}, {dx: 1, dy: 0}, 
+            {dx: 0, dy: -1}, {dx: -1, dy: 0}
+        ];
     }
 
     generate() {
@@ -23,21 +29,21 @@ export class Level {
         this.ensureExitPathway();
         this.addRandomFlowers();
         this.removeDeadEnds();
-        this.closeUnusedBorderOpenings(); // Nouvelle méthode pour fermer les ouvertures inutilisées
+        this.closeUnusedBorderOpenings();
     }
 
     initializeMaze() {
         this.maze = Array(this.height).fill().map((_, y) => 
             Array(this.width).fill().map((_, x) => 
                 (x === 0 || x === this.width - 1 || y === 0 || y === this.height - 1) ? 1 : 
-                (Math.random() < 0.3 ? 1 : 0) // 30% de chance d'avoir un arbre à l'intérieur
+                (Math.random() < 0.3 ? 1 : 0)
             )
         );
     }
 
     addRandomFlowers() {
         const flowerTypes = ['FleurBlanche', 'FleurMauve', 'FleurRouge'];
-        const flowerDensity = 0.05; // Ajustez cette valeur pour plus ou moins de fleurs
+        const flowerDensity = 0.05;
 
         for (let y = 1; y < this.height - 1; y++) {
             for (let x = 1; x < this.width - 1; x++) {
@@ -73,12 +79,11 @@ export class Level {
 
             if (!visited.has(key)) {
                 visited.add(key);
-                this.maze[current.y][current.x] = 0; // Creuser le chemin
+                this.maze[current.y][current.x] = 0;
 
                 const neighbors = this.getUnvisitedNeighbors(current);
                 for (const neighbor of neighbors) {
                     stack.push(neighbor);
-                    // 50% de chance d'élargir le passage
                     if (Math.random() < 0.5) {
                         const midX = (current.x + neighbor.x) / 2;
                         const midY = (current.y + neighbor.y) / 2;
@@ -101,7 +106,7 @@ export class Level {
     }
 
     createClearings() {
-        const numClearings = Math.floor(Math.random() * 3) + 3; // 3 à 5 clairières
+        const numClearings = Math.floor(Math.random() * 3) + 3;
         for (let i = 0; i < numClearings; i++) {
             this.createClearing();
         }
@@ -114,8 +119,7 @@ export class Level {
             let y = Math.floor(Math.random() * (this.height - 5)) + 2;
             
             if (this.canCreateClearing(x, y)) {
-                const size = Math.random() < 0.7 ? 3 : 4; // 70% de chance d'avoir une clairière 3x3, sinon 4x4
-
+                const size = Math.random() < 0.7 ? 3 : 4;
                 for (let dy = 0; dy < size; dy++) {
                     for (let dx = 0; dx < size; dx++) {
                         if (this.isValid(x + dx, y + dy)) {
@@ -204,8 +208,7 @@ export class Level {
             if (visited.has(currentKey)) continue;
             visited.add(currentKey);
 
-            const neighbors = this.getNeighbors(current);
-            for (const neighbor of neighbors) {
+            for (const neighbor of this.getNeighbors(current)) {
                 const neighborKey = `${neighbor.x},${neighbor.y}`;
                 const newDistance = distances[currentKey] + 1;
 
@@ -217,7 +220,7 @@ export class Level {
             }
         }
 
-        return Infinity; // Aucun chemin trouvé
+        return Infinity;
     }
 
     getPathDistance(start, end) {
@@ -381,21 +384,20 @@ export class Level {
     }
 
     draw(ctx) {
+        const cellSize = CONFIG.cellSize;
+    
+        // Dessiner les arbres
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
                 if (this.maze[y][x] === 1) {
-                    if (x * CONFIG.cellSize < ctx.canvas.width && y * CONFIG.cellSize < ctx.canvas.height) {
-                        drawTreeBlock(ctx, x, y);
-                    }
+                    drawTreeBlock(ctx, x, y);
                 }
             }
         }
-
+    
         // Dessiner les fleurs
         for (let flower of this.flowers) {
             drawFlower(ctx, flower.x, flower.y, flower.type);
         }
-
-        // Vous pouvez ajouter ici du code pour visualiser les clairières si nécessaire
     }
 }
