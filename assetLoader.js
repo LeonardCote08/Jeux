@@ -17,6 +17,8 @@ export const playerShadows = {
 // Variables pour stocker les images des éléments du jeu
 let treeImage;
 let treeShadowImage;
+let appleTreeImage;
+let appleTreeShadowImage;
 let flowerImages = {};
 export let grassTexture;
 
@@ -32,6 +34,8 @@ export async function loadAssets() {
 async function loadTreeImages() {
     treeImage = await loadImage('Assets/props/SingleTree.png');
     treeShadowImage = await loadImage('Assets/props/shadows/SingleTreeShadow.png');
+    appleTreeImage = await loadImage('Assets/props/SingleTreeApples.png');
+    appleTreeShadowImage = await loadImage('Assets/props/shadows/SingleTreeApplesShadow.png');
 }
 
 async function loadFlowerImages() {
@@ -116,19 +120,26 @@ async function loadGrassTexture() {
 }
 
 // Fonction pour dessiner un bloc d'arbre
-export function drawTreeBlock(ctx, x, y) {
+export function drawTreeBlock(ctx, x, y, isAppleTree) {
     const drawX = x * CONFIG.cellSize;
     const drawY = y * CONFIG.cellSize;
     const size = CONFIG.cellSize;
 
-    ctx.drawImage(treeShadowImage, drawX, drawY, size, size);
-    ctx.drawImage(treeImage, drawX, drawY, size, size);
+    ctx.drawImage(isAppleTree ? appleTreeShadowImage : treeShadowImage, drawX, drawY, size, size);
+    ctx.drawImage(isAppleTree ? appleTreeImage : treeImage, drawX, drawY, size, size);
 }
 
 export function drawFlower(ctx, x, y, flowerType) {
     const drawX = x * CONFIG.cellSize;
     const drawY = y * CONFIG.cellSize;
-    const size = CONFIG.cellSize;
+    const size = CONFIG.cellSize * 0.75; // Réduire la taille à 75%
+    const offset = (CONFIG.cellSize - size) / 2; // Centrer la fleur dans la cellule
 
-    ctx.drawImage(flowerImages[flowerType], drawX, drawY, size, size);
+    ctx.drawImage(
+        flowerImages[flowerType], 
+        drawX + offset, 
+        drawY + offset, 
+        size, 
+        size
+    );
 }

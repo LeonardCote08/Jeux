@@ -7,11 +7,13 @@ export class Level {
         this.width = width;
         this.height = height;
         this.maze = [];
+        this.treeTypes = []; // Nouveau tableau pour stocker les types d'arbres
         this.entrance = entrancePos || this.getRandomBorderPosition();
         this.exit = null;
         this.flowers = [];
         this.clearings = [];
         this.minPathLength = Math.floor(Math.max(width, height) * 1.5);
+        
         
         // Pré-calcul des directions pour optimiser les boucles
         this.directions = [
@@ -37,6 +39,13 @@ export class Level {
             Array(this.width).fill().map((_, x) => 
                 (x === 0 || x === this.width - 1 || y === 0 || y === this.height - 1) ? 1 : 
                 (Math.random() < 0.3 ? 1 : 0)
+            )
+        );
+        
+        // Initialiser le tableau des types d'arbres avec 15% de chance pour les pommiers
+        this.treeTypes = Array(this.height).fill().map(() => 
+            Array(this.width).fill().map(() => 
+                Math.random() < 0.15 ? 'apple' : 'normal'
             )
         );
     }
@@ -390,7 +399,7 @@ export class Level {
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
                 if (this.maze[y][x] === 1) {
-                    drawTreeBlock(ctx, x, y);
+                    drawTreeBlock(ctx, x, y, this.treeTypes[y][x] === 'apple');
                 }
             }
         }
