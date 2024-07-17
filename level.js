@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { drawTreeBlock, drawFlower } from './assetLoader.js';
+import { drawTreeBlock, drawFlower, drawPond } from './assetLoader.js';
 import { PriorityQueue } from './PriorityQueue.js';
 
 export class Level {
@@ -12,6 +12,9 @@ export class Level {
         this.exit = null;
         this.flowers = [];
         this.clearings = [];
+        this.ponds = []; // Propriété pour stocker les étangs
+        this.minPondSize = 24; // Taille minimale d'un étang
+        this.maxPondSize = 48; // Taille maximale d'un étang
         this.minPathLength = Math.floor(Math.max(width, height) * 1.5);
         
         
@@ -30,6 +33,7 @@ export class Level {
         this.ensureEntrancePathway();
         this.ensureExitPathway();
         this.addRandomFlowers();
+        this.addRandomPonds(); // Nouvelle méthode pour ajouter les étangs
         this.removeDeadEnds();
         this.closeUnusedBorderOpenings();
     }
@@ -62,6 +66,46 @@ export class Level {
                 }
             }
         }
+    }
+
+    addRandomPonds() {
+        const pondDensity = 0.01; // Ajustez cette valeur pour contrôler la densité des étangs
+
+        for (let y = 1; y < this.height - 1; y++) {
+            for (let x = 1; x < this.width - 1; x++) {
+                if (this.maze[y][x] === 0 && Math.random() < pondDensity) {
+                    const pondSize = Math.floor(Math.random() * (this.maxPondSize - this.minPondSize + 1)) + this.minPondSize;
+                    const pondWidth = Math.ceil(pondSize / CONFIG.cellSize) * CONFIG.cellSize;
+                    const pondHeight = Math.ceil(pondSize / CONFIG.cellSize) * CONFIG.cellSize;
+
+                    if (this.canPlacePond(x, y, pondWidth / CONFIG.cellSize, pondHeight / CONFIG.cellSize)) {
+                        this.ponds.push({ x, y, width: pondWidth, height: pondHeight });
+                        this.markPondArea(x, y, pondWidth / CONFIG.cellSize, pondHeight / CONFIG.cellSize);
+                    }
+                }
+            }
+        }
+    }
+
+    markPondArea(x, y, width, height) {
+        for (let dy = 0; dy < height; dy++) {
+            for (let dx = 0; dx < width; dx++) {
+                this.maze[y + dy][x + dx] = 2; // Marquer la cellule comme étang
+            }
+        }
+    }
+
+    canPlacePond(x, y, width, height) {
+        for (let dy = 0; dy < height; dy++) {
+            for (let dx = 0; dx < width; dx++) {
+                const checkX = x + dx;
+                const checkY = y + dy;
+                if (checkX < 0 || checkX >= this.width || checkY < 0 || checkY >= this.height || this.maze[checkY][checkX] !== 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     getUnvisitedNeighbors(cell) {
@@ -407,6 +451,11 @@ export class Level {
         // Dessiner les fleurs
         for (let flower of this.flowers) {
             drawFlower(ctx, flower.x, flower.y, flower.type);
+        }
+
+        // Dessiner les étangs
+        for (let pond of this.ponds) {
+            drawPond(ctx, pond.x, pond.y, pond.width, pond.height);
         }
     }
 }

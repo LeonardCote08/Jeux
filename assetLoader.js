@@ -20,6 +20,8 @@ let treeShadowImage;
 let appleTreeImage;
 let appleTreeShadowImage;
 let flowerImages = {};
+let pondImage;
+let pondSidesImage;
 export let grassTexture;
 
 export async function loadAssets() {
@@ -27,7 +29,9 @@ export async function loadAssets() {
         loadPlayerSprites(),
         loadTreeImages(),
         loadFlowerImages(),
-        loadGrassTexture()
+        loadGrassTexture(),
+        loadPondImage(),
+        loadPondSidesImage()
     ]);
 }
 
@@ -43,6 +47,10 @@ async function loadFlowerImages() {
     for (let type of flowerTypes) {
         flowerImages[type] = await loadImage(`Assets/props/fleurs/${type}.png`);
     }
+}
+
+async function loadPondImage() {
+    pondImage = await loadImage('Assets/props/water/Water1.png');
 }
 
 async function loadPlayerSprites() {
@@ -114,6 +122,35 @@ function extractSprite(sheet, col, row) {
     return canvas;
 }
 
+export function drawPond(ctx, x, y, width, height) {
+    const cellSize = CONFIG.cellSize;
+    const drawX = x * cellSize;
+    const drawY = y * cellSize;
+
+    // Dessiner les coins
+    drawPondPart(ctx, drawX, drawY, 0, 0); // Coin supérieur gauche
+    drawPondPart(ctx, drawX + width - 8, drawY, 2, 0); // Coin supérieur droit
+    drawPondPart(ctx, drawX, drawY + height - 8, 0, 2); // Coin inférieur gauche
+    drawPondPart(ctx, drawX + width - 8, drawY + height - 8, 2, 2); // Coin inférieur droit
+
+    // Dessiner les bords
+    for (let i = 8; i < width - 8; i += 8) {
+        drawPondPart(ctx, drawX + i, drawY, 1, 0); // Bord supérieur
+        drawPondPart(ctx, drawX + i, drawY + height - 8, 1, 2); // Bord inférieur
+    }
+    for (let i = 8; i < height - 8; i += 8) {
+        drawPondPart(ctx, drawX, drawY + i, 0, 1); // Bord gauche
+        drawPondPart(ctx, drawX + width - 8, drawY + i, 2, 1); // Bord droit
+    }
+
+    // Remplir le centre
+    for (let i = 8; i < width - 8; i += 8) {
+        for (let j = 8; j < height - 8; j += 8) {
+            drawPondPart(ctx, drawX + i, drawY + j, 1, 1);
+        }
+    }
+}
+
 // Charge la texture de l'herbe
 async function loadGrassTexture() {
     grassTexture = await loadImage('Assets/GrassTexture.png');
@@ -127,6 +164,20 @@ export function drawTreeBlock(ctx, x, y, isAppleTree) {
 
     ctx.drawImage(isAppleTree ? appleTreeShadowImage : treeShadowImage, drawX, drawY, size, size);
     ctx.drawImage(isAppleTree ? appleTreeImage : treeImage, drawX, drawY, size, size);
+}
+
+async function loadPondSidesImage() {
+    pondSidesImage = await loadImage('Assets/props/water/WaterSides1.png');
+}
+
+// Nouvelle fonction pour dessiner une partie spécifique de l'étang
+function drawPondPart(ctx, x, y, partX, partY) {
+    const partSize = 8; // Chaque partie fait 8x8 pixels
+    ctx.drawImage(
+        pondSidesImage,
+        partX * partSize, partY * partSize, partSize, partSize,
+        x, y, partSize, partSize
+    );
 }
 
 export function drawFlower(ctx, x, y, flowerType) {
