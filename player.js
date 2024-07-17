@@ -36,6 +36,7 @@ export class Player {
         this.lastJumpRequestTime = 0; // Moment de la dernière demande de saut
         this.canJump = true; // Indique si le joueur peut sauter
         this.jumpBuffered = false; // Nouvelle propriété pour indiquer si un saut est en buffer
+        
     }
 
     jump() {

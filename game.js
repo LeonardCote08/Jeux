@@ -138,6 +138,7 @@ export class Game {
         const rightCell = Math.floor(playerRight / CONFIG.cellSize);
         const bottomCell = Math.floor(playerBottom / CONFIG.cellSize);
 
+        // Vérification des collisions avec les arbres
         for (let cellY = topCell; cellY <= bottomCell; cellY++) {
             for (let cellX = leftCell; cellX <= rightCell; cellX++) {
                 if (cellY < 0 || cellY >= this.level.maze.length || 
@@ -148,7 +149,6 @@ export class Game {
                     const treeCenterY = cellY * CONFIG.cellSize + CONFIG.cellSize / 2;
                     const treeRadius = treeHitboxSize / 2;
 
-                    // Vérifier si le joueur est à l'intérieur du cercle inscrit dans la hitbox de l'arbre
                     const distanceX = Math.abs(playerCenterX - treeCenterX);
                     const distanceY = Math.abs(playerCenterY - treeCenterY);
 
@@ -165,6 +165,17 @@ export class Game {
                 }
             }
         }
+
+        // Vérification des collisions avec les étangs
+        for (const pond of this.level.ponds) {
+            if (playerRight >= pond.x * CONFIG.cellSize && 
+                playerLeft <= (pond.x + pond.width / CONFIG.cellSize) * CONFIG.cellSize &&
+                playerBottom >= pond.y * CONFIG.cellSize && 
+                playerTop <= (pond.y + pond.height / CONFIG.cellSize) * CONFIG.cellSize) {
+                return true; // Collision avec un étang
+            }
+        }
+
         return false; // Pas de collision
     }
 

@@ -33,7 +33,7 @@ export class Level {
         this.ensureEntrancePathway();
         this.ensureExitPathway();
         this.addRandomFlowers();
-        this.addRandomPonds(); // Nouvelle méthode pour ajouter les étangs
+        this.addRandomPonds(); // Assurez-vous que cette ligne est présente
         this.removeDeadEnds();
         this.closeUnusedBorderOpenings();
     }
