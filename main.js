@@ -30,9 +30,7 @@ function handleKeyUp(e) {
     if (['arrowleft', 'a', 'arrowright', 'd', 'arrowup', 'w', 'arrowdown', 's'].includes(key)) {
         keysPressed.delete(key);
     }
-    if (key === ' ') {
-        jumpRequested = false;
-    }
+    // Nous ne réinitialisons plus jumpRequested ici pour permettre le buffering
 }
 
 document.addEventListener('keydown', handleKeyDown);
@@ -52,7 +50,11 @@ function gameLoop(currentTime) {
     game.update(input, currentTime);
     game.draw();
     
-    jumpRequested = false; // Réinitialiser la demande de saut après chaque frame
+    if (jumpRequested) {
+        game.player.requestJump(); // Utiliser requestJump au lieu de jump
+        jumpRequested = false; // Réinitialiser la demande de saut après l'avoir traitée
+    }
+    
     requestAnimationFrame(gameLoop);
 }
 

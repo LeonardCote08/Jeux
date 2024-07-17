@@ -35,6 +35,7 @@ export class Player {
         this.jumpBufferDuration = 200; // Durée de la buffer window en millisecondes
         this.lastJumpRequestTime = 0; // Moment de la dernière demande de saut
         this.canJump = true; // Indique si le joueur peut sauter
+        this.jumpBuffered = false; // Nouvelle propriété pour indiquer si un saut est en buffer
     }
 
     jump() {
@@ -44,7 +45,7 @@ export class Player {
             this.jumpCycleComplete = false;
             this.isJumpBoosting = true;
             this.canJump = false;
-            // Ajouter un petit délai avant de pouvoir sauter à nouveau
+            this.jumpBuffered = false; // Réinitialiser le buffer de saut
             setTimeout(() => { this.canJump = true; }, 200);
         }
     }
@@ -53,6 +54,8 @@ export class Player {
         this.lastJumpRequestTime = performance.now();
         if (this.canJump && !this.isJumping) {
             this.jump();
+        } else {
+            this.jumpBuffered = true; // Mettre le saut en buffer si on ne peut pas sauter immédiatement
         }
     }
 
@@ -82,19 +85,31 @@ export class Player {
         const elapsed = currentTime - this.lastFrameTime;
         if (elapsed >= currentFrameDuration) {
             this.lastFrameTime = currentTime;
-
+    
             if (this.isJumping) {
                 this.updateJumpAnimation();
             } else if (this.isMoving) {
                 this.animationFrame = (this.animationFrame + 1) % this.totalFrames.walk;
                 this.idleCycleComplete = false;
                 this.lastIdleCycleTime = 0;
-            } 
-            else if (!this.canJump && !this.isJumping && currentTime - this.lastJumpRequestTime >= this.jumpBufferDuration) {
-                this.canJump = true;}
-            else {
+            } else {
                 this.updateIdleAnimation(currentTime);
             }
+        }
+    
+        // Vérifier si un saut en buffer peut être exécuté
+        if (this.jumpBuffered && this.canJump && !this.isJumping) {
+            this.jump();
+        }
+    
+        // Réinitialiser le buffer de saut si le temps écoulé dépasse la durée du buffer
+        if (this.jumpBuffered && currentTime - this.lastJumpRequestTime > this.jumpBufferDuration) {
+            this.jumpBuffered = false;
+        }
+    
+        // Vérifier si le joueur peut à nouveau sauter après un délai
+        if (!this.canJump && !this.isJumping && currentTime - this.lastJumpRequestTime >= this.jumpBufferDuration) {
+            this.canJump = true;
         }
     }
                 
