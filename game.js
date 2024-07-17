@@ -96,33 +96,55 @@ export class Game {
             dy *= factor;
         }
     
-        // Vérification des collisions et ajustement de la position
-        const newX = this.player.x + dx;
-        const newY = this.player.y + dy;
-    
-        if (!this.checkCollision(newX, this.player.y)) {
-            this.player.x = newX;
-        }
-        if (!this.checkCollision(this.player.x, newY)) {
-            this.player.y = newY;
-        }
+        // Appliquer le mouvement avec gestion des collisions
+        this.applyMovement(dx, dy);
     
         this.player.isMoving = (dx !== 0 || dy !== 0);
         if (this.player.isMoving) {
             this.player.lastMoveTime = performance.now();
             this.player.updateDirection(dx, dy);
         }
-
+    
         // Gestion du saut
         if (input.jump) {
             this.player.jump();
+        }
+    }
+    
+    applyMovement(dx, dy) {
+        const steps = 4; // Nombre d'étapes pour le mouvement progressif
+        const stepX = dx / steps;
+        const stepY = dy / steps;
+    
+        for (let i = 0; i < steps; i++) {
+            const newX = this.player.x + stepX;
+            const newY = this.player.y + stepY;
+    
+            const { collision: collisionX, slideX } = this.checkCollision(newX, this.player.y);
+            const { collision: collisionY, slideY } = this.checkCollision(this.player.x, newY);
+    
+            if (!collisionX) {
+                this.player.x = newX;
+            } else if (Math.abs(slideX) > Math.abs(stepX) * 0.1) {
+                this.player.x += slideX;
+            }
+    
+            if (!collisionY) {
+                this.player.y = newY;
+            } else if (Math.abs(slideY) > Math.abs(stepY) * 0.1) {
+                this.player.y += slideY;
+            }
+    
+            if (collisionX && collisionY) {
+                break; // Arrêter le mouvement si collision dans les deux directions
+            }
         }
     }
 
     // Système de collision optimisé
     checkCollision(x, y) {
         const hitboxSize = CONFIG.playerHitboxSize;
-        const treeHitboxSize = CONFIG.treeHitboxSize * 0.8; // Réduire légèrement la hitbox des arbres
+        const treeHitboxSize = CONFIG.treeHitboxSize * 0.8;
         const hitboxOffset = (CONFIG.cellSize - hitboxSize) / 2;
         const treeHitboxOffset = (CONFIG.cellSize - treeHitboxSize) / 2;
     
@@ -130,94 +152,61 @@ export class Game {
         const playerTop = y + hitboxOffset;
         const playerRight = playerLeft + hitboxSize;
         const playerBottom = playerTop + hitboxSize;
-        const playerCenterX = (playerLeft + playerRight) / 2;
-        const playerCenterY = (playerTop + playerBottom) / 2;
-        const playerRadius = hitboxSize / 2;
     
         const leftCell = Math.floor(playerLeft / CONFIG.cellSize);
         const topCell = Math.floor(playerTop / CONFIG.cellSize);
         const rightCell = Math.floor(playerRight / CONFIG.cellSize);
         const bottomCell = Math.floor(playerBottom / CONFIG.cellSize);
     
-        // Fonction helper pour vérifier la collision avec un rectangle aux coins arrondis
-        const checkRoundedRectCollision = (rectLeft, rectTop, rectWidth, rectHeight, cornerRadius) => {
-            const rectRight = rectLeft + rectWidth;
-            const rectBottom = rectTop + rectHeight;
+        let collision = false;
+        let slideX = 0;
+        let slideY = 0;
     
-            // Vérifier si le joueur est complètement en dehors du rectangle
-            if (playerRight < rectLeft || playerLeft > rectRight || 
-                playerBottom < rectTop || playerTop > rectBottom) {
-                return false;
-            }
-    
-            // Vérifier si le joueur est à l'intérieur du rectangle sans les coins
-            if (playerCenterX >= rectLeft + cornerRadius && playerCenterX <= rectRight - cornerRadius &&
-                playerCenterY >= rectTop + cornerRadius && playerCenterY <= rectBottom - cornerRadius) {
-                return true;
-            }
-    
-            // Vérifier la collision avec les coins arrondis
-            const checkCorner = (cornerX, cornerY) => {
-                const deltaX = playerCenterX - cornerX;
-                const deltaY = playerCenterY - cornerY;
-                return (deltaX * deltaX + deltaY * deltaY) <= (playerRadius + cornerRadius) * (playerRadius + cornerRadius);
-            };
-    
-            // Vérifier chaque coin
-            if (playerCenterX < rectLeft + cornerRadius && playerCenterY < rectTop + cornerRadius) {
-                return checkCorner(rectLeft + cornerRadius, rectTop + cornerRadius);
-            }
-            if (playerCenterX > rectRight - cornerRadius && playerCenterY < rectTop + cornerRadius) {
-                return checkCorner(rectRight - cornerRadius, rectTop + cornerRadius);
-            }
-            if (playerCenterX < rectLeft + cornerRadius && playerCenterY > rectBottom - cornerRadius) {
-                return checkCorner(rectLeft + cornerRadius, rectBottom - cornerRadius);
-            }
-            if (playerCenterX > rectRight - cornerRadius && playerCenterY > rectBottom - cornerRadius) {
-                return checkCorner(rectRight - cornerRadius, rectBottom - cornerRadius);
-            }
-    
-            // Si on arrive ici, le joueur est en collision avec un bord droit
-            return true;
-        };
-    
-        // Vérification des collisions avec les arbres et les murs
         for (let cellY = topCell; cellY <= bottomCell; cellY++) {
             for (let cellX = leftCell; cellX <= rightCell; cellX++) {
-                if (cellY < 0 || cellY >= this.level.maze.length || 
-                    cellX < 0 || cellX >= this.level.maze[0].length ||
-                    this.level.maze[cellY][cellX] === 1) {
-                    
-                    if (checkRoundedRectCollision(
-                        cellX * CONFIG.cellSize + treeHitboxOffset,
-                        cellY * CONFIG.cellSize + treeHitboxOffset,
-                        treeHitboxSize,
-                        treeHitboxSize,
-                        treeHitboxSize / 4 // Rayon de coin pour les arbres
-                    )) {
-                        return true;
+                if (this.isTreeOrWall(cellX, cellY)) {
+                    const treeLeft = cellX * CONFIG.cellSize + treeHitboxOffset;
+                    const treeTop = cellY * CONFIG.cellSize + treeHitboxOffset;
+                    const treeRight = treeLeft + treeHitboxSize;
+                    const treeBottom = treeTop + treeHitboxSize;
+    
+                    // Vérifier la collision
+                    if (playerRight > treeLeft && playerLeft < treeRight &&
+                        playerBottom > treeTop && playerTop < treeBottom) {
+                        collision = true;
+    
+                        // Calculer les distances de chevauchement
+                        const overlapLeft = playerRight - treeLeft;
+                        const overlapRight = treeRight - playerLeft;
+                        const overlapTop = playerBottom - treeTop;
+                        const overlapBottom = treeBottom - playerTop;
+    
+                        // Trouver la plus petite distance de chevauchement
+                        const minOverlapX = Math.min(overlapLeft, overlapRight);
+                        const minOverlapY = Math.min(overlapTop, overlapBottom);
+    
+                        // Ajuster la direction de glissement
+                        if (minOverlapX < minOverlapY) {
+                            slideX = (overlapLeft < overlapRight) ? -minOverlapX : minOverlapX;
+                        } else {
+                            slideY = (overlapTop < overlapBottom) ? -minOverlapY : minOverlapY;
+                        }
                     }
                 }
             }
         }
+        // Ajout d'un seuil minimal pour le glissement
+        const minSlideThreshold = 0.1;
+        if (Math.abs(slideX) < minSlideThreshold) slideX = 0;
+        if (Math.abs(slideY) < minSlideThreshold) slideY = 0;
+        
+        return { collision, slideX, slideY };
+    }
     
-        // Vérification des collisions avec les étangs
-        for (const pond of this.level.ponds) {
-            const pondHitboxSize = CONFIG.cellSize * 0.9; // Réduire légèrement la hitbox des étangs
-            const pondHitboxOffset = (CONFIG.cellSize - pondHitboxSize) / 2;
-    
-            if (checkRoundedRectCollision(
-                pond.x * CONFIG.cellSize + pondHitboxOffset,
-                pond.y * CONFIG.cellSize + pondHitboxOffset,
-                pond.width - 2 * pondHitboxOffset, // Ajuster la largeur pour correspondre à la grille
-                pond.height - 2 * pondHitboxOffset, // Ajuster la hauteur pour correspondre à la grille
-                CONFIG.cellSize / 8 // Rayon de coin pour les étangs (plus petit pour un arrondi subtil)
-            )) {
-                return true;
-            }
-        }
-    
-        return false; // Pas de collision
+    isTreeOrWall(x, y) {
+        return (y < 0 || y >= this.level.maze.length ||
+                x < 0 || x >= this.level.maze[0].length ||
+                this.level.maze[y][x] === 1);
     }
 
     // Méthode de rendu optimisée
