@@ -117,18 +117,46 @@ export class Game {
     // Système de collision optimisé
     checkCollision(x, y) {
         const hitboxSize = CONFIG.playerHitboxSize;
+        const treeHitboxSize = CONFIG.treeHitboxSize;
         const hitboxOffset = (CONFIG.cellSize - hitboxSize) / 2;
-        const left = Math.floor((x + hitboxOffset) / CONFIG.cellSize);
-        const top = Math.floor((y + hitboxOffset) / CONFIG.cellSize);
-        const right = Math.floor((x + hitboxOffset + hitboxSize - 1) / CONFIG.cellSize);
-        const bottom = Math.floor((y + hitboxOffset + hitboxSize - 1) / CONFIG.cellSize);
+        const treeHitboxOffset = (CONFIG.cellSize - treeHitboxSize) / 2;
 
-        for (let cellY = top; cellY <= bottom; cellY++) {
-            for (let cellX = left; cellX <= right; cellX++) {
+        const playerLeft = x + hitboxOffset;
+        const playerTop = y + hitboxOffset;
+        const playerRight = playerLeft + hitboxSize - 1;
+        const playerBottom = playerTop + hitboxSize - 1;
+        const playerCenterX = (playerLeft + playerRight) / 2;
+        const playerCenterY = (playerTop + playerBottom) / 2;
+
+        const leftCell = Math.floor(playerLeft / CONFIG.cellSize);
+        const topCell = Math.floor(playerTop / CONFIG.cellSize);
+        const rightCell = Math.floor(playerRight / CONFIG.cellSize);
+        const bottomCell = Math.floor(playerBottom / CONFIG.cellSize);
+
+        for (let cellY = topCell; cellY <= bottomCell; cellY++) {
+            for (let cellX = leftCell; cellX <= rightCell; cellX++) {
                 if (cellY < 0 || cellY >= this.level.maze.length || 
                     cellX < 0 || cellX >= this.level.maze[0].length ||
                     this.level.maze[cellY][cellX] === 1) {
-                    return true; // Collision détectée
+                    
+                    const treeCenterX = cellX * CONFIG.cellSize + CONFIG.cellSize / 2;
+                    const treeCenterY = cellY * CONFIG.cellSize + CONFIG.cellSize / 2;
+                    const treeRadius = treeHitboxSize / 2;
+
+                    // Vérifier si le joueur est à l'intérieur du cercle inscrit dans la hitbox de l'arbre
+                    const distanceX = Math.abs(playerCenterX - treeCenterX);
+                    const distanceY = Math.abs(playerCenterY - treeCenterY);
+
+                    if (distanceX > (treeHitboxSize / 2 + hitboxSize / 2)) continue;
+                    if (distanceY > (treeHitboxSize / 2 + hitboxSize / 2)) continue;
+
+                    if (distanceX <= (treeHitboxSize / 2)) return true;
+                    if (distanceY <= (treeHitboxSize / 2)) return true;
+
+                    const cornerDistance = Math.pow(distanceX - treeHitboxSize / 2, 2) +
+                                           Math.pow(distanceY - treeHitboxSize / 2, 2);
+
+                    if (cornerDistance <= Math.pow(treeRadius + hitboxSize / 2, 2)) return true;
                 }
             }
         }
