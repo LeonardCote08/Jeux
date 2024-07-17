@@ -96,13 +96,22 @@ export class Game {
     }
 
     movePlayer(keysPressed, deltaTime) {
-        const speed = (CONFIG.playerSpeed * deltaTime) / 16;
+        const baseSpeed = (CONFIG.playerSpeed * deltaTime) / 16;
+        const speedFactor = this.player.getSpeedFactor();
+        const speed = baseSpeed * speedFactor;
         let dx = 0, dy = 0;
     
         if (keysPressed.has('left')) dx -= speed;
         if (keysPressed.has('right')) dx += speed;
         if (keysPressed.has('up')) dy -= speed;
         if (keysPressed.has('down')) dy += speed;
+    
+        // Normaliser le mouvement diagonal
+        if (dx !== 0 && dy !== 0) {
+            const factor = 1 / Math.sqrt(2);
+            dx *= factor;
+            dy *= factor;
+        }
     
         // Vérifier les collisions et ajuster la position
         const newX = this.player.x + dx;

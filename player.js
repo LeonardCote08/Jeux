@@ -30,6 +30,11 @@ export class Player {
         this.idleCycleComplete = false;
         this.idlePauseDuration = 2000;
         this.lastIdleCycleTime = 0;
+        this.jumpBoost = 1.5; // Facteur de boost pendant le saut
+        this.isJumpBoosting = false; // Indique si le boost est actif
+        this.jumpBufferDuration = 200; // Durée de la buffer window en millisecondes
+        this.lastJumpRequestTime = 0; // Moment de la dernière demande de saut
+        this.canJump = true; // Indique si le joueur peut sauter
     }
 
     jump() {
@@ -37,6 +42,15 @@ export class Player {
             this.isJumping = true;
             this.jumpFrame = 0;
             this.jumpCycleComplete = false;
+            this.isJumpBoosting = true; // Activer le boost au début du saut
+            this.canJump = false; // Empêcher un nouveau saut pendant l'animation
+        }
+    }
+
+    requestJump() {
+        this.lastJumpRequestTime = performance.now();
+        if (this.canJump && !this.isJumping) {
+            this.jump();
         }
     }
 
@@ -73,12 +87,15 @@ export class Player {
                 this.animationFrame = (this.animationFrame + 1) % this.totalFrames.walk;
                 this.idleCycleComplete = false;
                 this.lastIdleCycleTime = 0;
-            } else {
+            } 
+            else if (!this.canJump && !this.isJumping && currentTime - this.lastJumpRequestTime >= this.jumpBufferDuration) {
+                this.canJump = true;}
+            else {
                 this.updateIdleAnimation(currentTime);
             }
         }
     }
-
+                
 
     updateIdleAnimation(currentTime) {
         if (currentTime - this.lastMoveTime <= this.idleThreshold) {
@@ -104,11 +121,19 @@ export class Player {
         }
     }
 
-    updateJumpAnimation() {
+    updateJumpAnimation(currentTime) {
         if (this.jumpCycleComplete) {
             this.isJumping = false;
             this.jumpHeight = 0;
             this.jumpFrame = 0;
+            this.isJumpBoosting = false; // Désactiver le boost à la fin du saut
+            
+            // Vérifier si une demande de saut a été faite pendant l'animation
+            if (currentTime - this.lastJumpRequestTime < this.jumpBufferDuration) {
+                this.jump();
+            } else {
+                this.canJump = true; // Autoriser un nouveau saut
+            }
             return;
         }
 
@@ -123,6 +148,10 @@ export class Player {
         }
 
         this.animationFrame = Math.min(this.jumpFrame, this.totalFrames.jump - 1);
+    }
+
+    getSpeedFactor() {
+        return this.isJumpBoosting ? this.jumpBoost : 1;
     }
 
     draw(ctx, playerSprites, playerShadows) {
