@@ -30,7 +30,7 @@ export class Player {
         this.idleCycleComplete = false;
         this.idlePauseDuration = 2000;
         this.lastIdleCycleTime = 0;
-        this.jumpBoost = 1.5; // Facteur de boost pendant le saut
+        this.jumpBoost = 2; // Facteur de boost pendant le saut
         this.isJumpBoosting = false; // Indique si le boost est actif
         this.jumpBufferDuration = 200; // Durée de la buffer window en millisecondes
         this.lastJumpRequestTime = 0; // Moment de la dernière demande de saut

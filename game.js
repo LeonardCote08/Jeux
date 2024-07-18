@@ -55,9 +55,10 @@ export class Game {
     
         this.movePlayer(input, deltaTime);
         this.player.updateAnimation(currentTime);
-
+    
         if (this.hasReachedExit()) {
             this.goToNextLevel();
+            return; // Arrêter le traitement après la transition
         }
     }
 
@@ -68,13 +69,45 @@ export class Game {
             y: this.level.exit.y === 0 ? CONFIG.gridHeight - 1 : (this.level.exit.y === CONFIG.gridHeight - 1 ? 0 : this.level.exit.y)
         };
         this.generateNewLevel(entrancePos);
+        
+        // Réinitialiser l'état du joueur
+        this.player.isJumping = false;
+        this.player.jumpHeight = 0;
+        this.player.jumpFrame = 0;
+        this.player.isJumpBoosting = false;
     }
 
     // Vérification optimisée de l'atteinte de la sortie
     hasReachedExit() {
         const playerCellX = Math.floor(this.player.x / CONFIG.cellSize);
         const playerCellY = Math.floor(this.player.y / CONFIG.cellSize);
-        return playerCellX === this.level.exit.x && playerCellY === this.level.exit.y;
+        const exitX = this.level.exit.x;
+        const exitY = this.level.exit.y;
+    
+        // Fonction pour vérifier si une cellule est à l'intérieur du labyrinthe
+        const isInsideMaze = (x, y) => x > 0 && x < CONFIG.gridWidth - 1 && y > 0 && y < CONFIG.gridHeight - 1;
+    
+        // Vérifier si le joueur est sur la case de sortie
+        if (playerCellX === exitX && playerCellY === exitY) {
+            return true;
+        }
+    
+        // Vérifier la zone élargie uniquement vers l'extérieur du labyrinthe
+        if (exitX === 0) {
+            return playerCellX === exitX && Math.abs(playerCellY - exitY) <= 1;
+        }
+        if (exitX === CONFIG.gridWidth - 1) {
+            return playerCellX === exitX && Math.abs(playerCellY - exitY) <= 1;
+        }
+        if (exitY === 0) {
+            return playerCellY === exitY && Math.abs(playerCellX - exitX) <= 1;
+        }
+        if (exitY === CONFIG.gridHeight - 1) {
+            return playerCellY === exitY && Math.abs(playerCellX - exitX) <= 1;
+        }
+    
+        // Si la sortie n'est pas sur un bord (ce qui ne devrait pas arriver normalement)
+        return false;
     }
 
     // Gestion optimisée du mouvement du joueur
