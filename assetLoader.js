@@ -25,6 +25,7 @@ let waterAnimationFrame = 0;
 const ANIMATION_SPEED = 500; 
 let animationCounter = 0;
 const ANIMATION_FRAME_RATE = 60; // Nombre de frames par seconde du jeu
+const WATER_TILE_SIZE = 8; // Taille réelle d'une tuile d'eau en pixels
 export let grassTexture;
 
 export async function loadAssets() {
@@ -124,13 +125,13 @@ function extractSprite(sheet, col, row) {
 export function drawPond(ctx, pond) {
     const pondImage = pondSidesImages[waterAnimationFrame];
     const {shape, centerX, centerY} = pond;
-    const halfSize = Math.floor(shape.length / 2);
+    const halfSize = Math.floor(shape.length / 2) * WATER_TILE_SIZE;
 
     for (let dy = 0; dy < shape.length; dy++) {
         for (let dx = 0; dx < shape[dy].length; dx++) {
             if (shape[dy][dx]) {
-                const worldX = (centerX - halfSize + dx) * CONFIG.cellSize;
-                const worldY = (centerY - halfSize + dy) * CONFIG.cellSize;
+                const worldX = centerX - halfSize + dx * WATER_TILE_SIZE;
+                const worldY = centerY - halfSize + dy * WATER_TILE_SIZE;
                 const tileType = getPondTileType(shape, dx, dy);
                 drawPondTile(ctx, pondImage, worldX, worldY, tileType);
             }
@@ -138,28 +139,26 @@ export function drawPond(ctx, pond) {
     }
 }
 
-// Fonction modifiée dans assetLoader.js
 function drawPondTile(ctx, image, x, y, tileType) {
-    const tileSize = 8;
     let sx, sy;
 
     switch (tileType) {
         case 'topLeft': sx = 0; sy = 0; break;
-        case 'top': sx = tileSize; sy = 0; break;
-        case 'topRight': sx = tileSize * 2; sy = 0; break;
-        case 'left': sx = 0; sy = tileSize; break;
-        case 'center': sx = tileSize; sy = tileSize; break;
-        case 'right': sx = tileSize * 2; sy = tileSize; break;
-        case 'bottomLeft': sx = 0; sy = tileSize * 2; break;
-        case 'bottom': sx = tileSize; sy = tileSize * 2; break;
-        case 'bottomRight': sx = tileSize * 2; sy = tileSize * 2; break;
-        case 'innerTopLeft': sx = tileSize; sy = tileSize; break;
-        case 'innerTopRight': sx = tileSize; sy = tileSize; break;
-        case 'innerBottomLeft': sx = tileSize; sy = tileSize; break;
-        case 'innerBottomRight': sx = tileSize; sy = tileSize; break;
+        case 'top': sx = WATER_TILE_SIZE; sy = 0; break;
+        case 'topRight': sx = WATER_TILE_SIZE * 2; sy = 0; break;
+        case 'left': sx = 0; sy = WATER_TILE_SIZE; break;
+        case 'center': sx = WATER_TILE_SIZE; sy = WATER_TILE_SIZE; break;
+        case 'right': sx = WATER_TILE_SIZE * 2; sy = WATER_TILE_SIZE; break;
+        case 'bottomLeft': sx = 0; sy = WATER_TILE_SIZE * 2; break;
+        case 'bottom': sx = WATER_TILE_SIZE; sy = WATER_TILE_SIZE * 2; break;
+        case 'bottomRight': sx = WATER_TILE_SIZE * 2; sy = WATER_TILE_SIZE * 2; break;
+        case 'innerTopLeft': sx = WATER_TILE_SIZE; sy = WATER_TILE_SIZE; break;
+        case 'innerTopRight': sx = WATER_TILE_SIZE; sy = WATER_TILE_SIZE; break;
+        case 'innerBottomLeft': sx = WATER_TILE_SIZE; sy = WATER_TILE_SIZE; break;
+        case 'innerBottomRight': sx = WATER_TILE_SIZE; sy = WATER_TILE_SIZE; break;
     }
 
-    ctx.drawImage(image, sx, sy, tileSize, tileSize, x, y, CONFIG.cellSize, CONFIG.cellSize);
+    ctx.drawImage(image, sx, sy, WATER_TILE_SIZE, WATER_TILE_SIZE, x, y, WATER_TILE_SIZE, WATER_TILE_SIZE);
 }
 
 function getPondTileType(shape, x, y) {
