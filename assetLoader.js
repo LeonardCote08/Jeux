@@ -121,42 +121,81 @@ function extractSprite(sheet, col, row) {
     return canvas;
 }
 
-export function drawPond(ctx, x, y, width, height) {
+export function drawPond(ctx, pond) {
     const pondImage = pondSidesImages[waterAnimationFrame];
-    const sourceSize = 8; // Taille d'une tuile dans l'image source
-    const drawX = x * CONFIG.cellSize;
-    const drawY = y * CONFIG.cellSize;
+    const {shape, centerX, centerY} = pond;
+    const halfSize = Math.floor(shape.length / 2);
 
-    // Calculer combien de tuiles complètes sont nécessaires
-    const tilesWidth = Math.ceil(width / sourceSize);
-    const tilesHeight = Math.ceil(height / sourceSize);
-
-    for (let tileY = 0; tileY < tilesHeight; tileY++) {
-        for (let tileX = 0; tileX < tilesWidth; tileX++) {
-            let sx, sy;
-
-            // Déterminer quelle partie de l'image source utiliser
-            if (tileY === 0) sy = 0;
-            else if (tileY === tilesHeight - 1) sy = 16;
-            else sy = 8;
-
-            if (tileX === 0) sx = 0;
-            else if (tileX === tilesWidth - 1) sx = 16;
-            else sx = 8;
-
-            // Calculer la taille de dessin pour cette tuile
-            const drawWidth = Math.min(sourceSize, width - tileX * sourceSize);
-            const drawHeight = Math.min(sourceSize, height - tileY * sourceSize);
-
-            ctx.drawImage(
-                pondImage,
-                sx, sy, sourceSize, sourceSize,
-                drawX + tileX * sourceSize, drawY + tileY * sourceSize, drawWidth, drawHeight
-            );
+    for (let dy = 0; dy < shape.length; dy++) {
+        for (let dx = 0; dx < shape[dy].length; dx++) {
+            if (shape[dy][dx]) {
+                const worldX = (centerX - halfSize + dx) * CONFIG.cellSize;
+                const worldY = (centerY - halfSize + dy) * CONFIG.cellSize;
+                const tileType = getPondTileType(shape, dx, dy);
+                drawPondTile(ctx, pondImage, worldX, worldY, tileType);
+            }
         }
     }
 }
 
+// Fonction modifiée dans assetLoader.js
+function drawPondTile(ctx, image, x, y, tileType) {
+    const tileSize = 8;
+    let sx, sy;
+
+    switch (tileType) {
+        case 'topLeft': sx = 0; sy = 0; break;
+        case 'top': sx = tileSize; sy = 0; break;
+        case 'topRight': sx = tileSize * 2; sy = 0; break;
+        case 'left': sx = 0; sy = tileSize; break;
+        case 'center': sx = tileSize; sy = tileSize; break;
+        case 'right': sx = tileSize * 2; sy = tileSize; break;
+        case 'bottomLeft': sx = 0; sy = tileSize * 2; break;
+        case 'bottom': sx = tileSize; sy = tileSize * 2; break;
+        case 'bottomRight': sx = tileSize * 2; sy = tileSize * 2; break;
+        case 'innerTopLeft': sx = tileSize; sy = tileSize; break;
+        case 'innerTopRight': sx = tileSize; sy = tileSize; break;
+        case 'innerBottomLeft': sx = tileSize; sy = tileSize; break;
+        case 'innerBottomRight': sx = tileSize; sy = tileSize; break;
+    }
+
+    ctx.drawImage(image, sx, sy, tileSize, tileSize, x, y, CONFIG.cellSize, CONFIG.cellSize);
+}
+
+function getPondTileType(shape, x, y) {
+    const isWater = (dx, dy) => {
+        const newX = x + dx;
+        const newY = y + dy;
+        return newX >= 0 && newX < shape[0].length && newY >= 0 && newY < shape.length && shape[newY][newX];
+    };
+
+    const top = !isWater(0, -1);
+    const bottom = !isWater(0, 1);
+    const left = !isWater(-1, 0);
+    const right = !isWater(1, 0);
+
+    if (top && left) return 'topLeft';
+    if (top && right) return 'topRight';
+    if (bottom && left) return 'bottomLeft';
+    if (bottom && right) return 'bottomRight';
+    if (top) return 'top';
+    if (bottom) return 'bottom';
+    if (left) return 'left';
+    if (right) return 'right';
+
+    // Vérifier les diagonales pour les coins intérieurs
+    const topLeft = !isWater(-1, -1);
+    const topRight = !isWater(1, -1);
+    const bottomLeft = !isWater(-1, 1);
+    const bottomRight = !isWater(1, 1);
+
+    if (topLeft && !top && !left) return 'innerTopLeft';
+    if (topRight && !top && !right) return 'innerTopRight';
+    if (bottomLeft && !bottom && !left) return 'innerBottomLeft';
+    if (bottomRight && !bottom && !right) return 'innerBottomRight';
+
+    return 'center';
+}
 
 
 export function updateWaterAnimation() {

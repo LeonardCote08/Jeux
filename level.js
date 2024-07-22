@@ -70,49 +70,54 @@ export class Level {
     }
 
     addRandomPonds() {
-        const pondDensity = 0.02;
-        const minPondSize = 24; // 3 tuiles de 8 pixels
-        const maxPondSize = 64; // 8 tuiles de 8 pixels
-
+        const pondDensity = 0.10;
+        const minPondRadius = 2;
+        const maxPondRadius = 4;
+    
         for (let y = 1; y < this.height - 1; y++) {
             for (let x = 1; x < this.width - 1; x++) {
                 if (this.maze[y][x] === 0 && Math.random() < pondDensity) {
-                    let pondWidth = Math.floor(Math.random() * (maxPondSize - minPondSize + 1) + minPondSize);
-                    let pondHeight = Math.floor(Math.random() * (maxPondSize - minPondSize + 1) + minPondSize);
-
-                    // Arrondir à un multiple de 8 pour correspondre aux tuiles de l'image
-                    pondWidth = Math.round(pondWidth / 8) * 8;
-                    pondHeight = Math.round(pondHeight / 8) * 8;
-
-                    if (this.canPlacePond(x, y, pondWidth / 8, pondHeight / 8)) {
-                        this.ponds.push({ x, y, width: pondWidth, height: pondHeight });
-                        this.markPondArea(x, y, pondWidth / 8, pondHeight / 8);
+                    const radius = Math.floor(Math.random() * (maxPondRadius - minPondRadius + 1) + minPondRadius);
+                    const pond = this.generateOrganicPondShape(x, y, radius);
+                    
+                    if (this.canPlacePond(pond)) {
+                        this.ponds.push(pond);
+                        this.markPondArea(pond);
                     }
                 }
             }
         }
     }
 
-    canPlacePond(x, y, widthInCells, heightInCells) {
-        if (x + widthInCells > this.width - 1 || y + heightInCells > this.height - 1) {
-            return false;
-        }
-        for (let dy = 0; dy < heightInCells; dy++) {
-            for (let dx = 0; dx < widthInCells; dx++) {
-                const checkX = x + dx;
-                const checkY = y + dy;
-                if (this.maze[checkY][checkX] !== 0 || this.isNearBorder(checkX, checkY)) {
-                    return false;
+    canPlacePond(pond) {
+        const {shape, centerX, centerY} = pond;
+        const halfSize = Math.floor(shape.length / 2);
+    
+        for (let dy = 0; dy < shape.length; dy++) {
+            for (let dx = 0; dx < shape[dy].length; dx++) {
+                if (shape[dy][dx]) {
+                    const worldX = centerX - halfSize + dx;
+                    const worldY = centerY - halfSize + dy;
+                    if (worldX < 1 || worldX >= this.width - 1 || worldY < 1 || worldY >= this.height - 1 || this.maze[worldY][worldX] !== 0) {
+                        return false;
+                    }
                 }
             }
         }
         return true;
     }
 
-    markPondArea(x, y, widthInCells, heightInCells) {
-        for (let dy = 0; dy < heightInCells; dy++) {
-            for (let dx = 0; dx < widthInCells; dx++) {
-                this.maze[y + dy][x + dx] = 2; // 2 représente un étang
+    markPondArea(pond) {
+        const {shape, centerX, centerY} = pond;
+        const halfSize = Math.floor(shape.length / 2);
+    
+        for (let dy = 0; dy < shape.length; dy++) {
+            for (let dx = 0; dx < shape[dy].length; dx++) {
+                if (shape[dy][dx]) {
+                    const worldX = centerX - halfSize + dx;
+                    const worldY = centerY - halfSize + dy;
+                    this.maze[worldY][worldX] = 2; // 2 représente un étang
+                }
             }
         }
     }
@@ -327,6 +332,71 @@ export class Level {
         }
     }
 
+    
+    // Nouvelle fonction dans level.js
+    generateOrganicPondShape(centerX, centerY, maxRadius) {
+        const shape = Array(maxRadius * 2 + 1).fill().map(() => Array(maxRadius * 2 + 1).fill(false));
+        const queue = [{x: maxRadius, y: maxRadius}];
+        shape[maxRadius][maxRadius] = true;
+    
+        while (queue.length > 0) {
+            const {x, y} = queue.shift();
+            const directions = [{dx: -1, dy: 0}, {dx: 1, dy: 0}, {dx: 0, dy: -1}, {dx: 0, dy: 1}];
+    
+            for (const {dx, dy} of directions) {
+                const newX = x + dx;
+                const newY = y + dy;
+                if (newX >= 0 && newX < shape.length && newY >= 0 && newY < shape[0].length) {
+                    const distance = Math.sqrt(Math.pow(newX - maxRadius, 2) + Math.pow(newY - maxRadius, 2));
+                    if (!shape[newX][newY] && distance <= maxRadius && Math.random() < 0.7) {
+                        shape[newX][newY] = true;
+                        queue.push({x: newX, y: newY});
+                    }
+                }
+            }
+        }
+    
+        // Assurons-nous que les extrémités sont correctement formées
+        this.ensureValidPondExtremities(shape);
+    
+        // Vérification de la taille minimale
+        let waterTiles = shape.flat().filter(tile => tile).length;
+        if (waterTiles < 4) {
+            return null;
+        }
+    
+        return {shape, centerX, centerY};
+    }
+
+    ensureValidPondExtremities(shape) {
+        const width = shape.length;
+        const height = shape[0].length;
+    
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                if (shape[y][x]) {
+                    // Vérifier et corriger les extrémités
+                    if (y === 0 || !shape[y-1][x]) { // Extrémité supérieure
+                        if (x > 0) shape[y][x-1] = true;
+                        if (x < width - 1) shape[y][x+1] = true;
+                    }
+                    if (y === height - 1 || !shape[y+1][x]) { // Extrémité inférieure
+                        if (x > 0) shape[y][x-1] = true;
+                        if (x < width - 1) shape[y][x+1] = true;
+                    }
+                    if (x === 0 || !shape[y][x-1]) { // Extrémité gauche
+                        if (y > 0) shape[y-1][x] = true;
+                        if (y < height - 1) shape[y+1][x] = true;
+                    }
+                    if (x === width - 1 || !shape[y][x+1]) { // Extrémité droite
+                        if (y > 0) shape[y-1][x] = true;
+                        if (y < height - 1) shape[y+1][x] = true;
+                    }
+                }
+            }
+        }
+    }
+
     isBorderCell(x, y) {
         return x === 0 || x === this.width - 1 || y === 0 || y === this.height - 1;
     }
@@ -374,9 +444,9 @@ export class Level {
             drawFlower(ctx, flower.x, flower.y, flower.type);
         }
 
-        // Dessiner les étangs
+            // Dessiner les étangs
         for (const pond of this.ponds) {
-            drawPond(ctx, pond.x, pond.y, pond.width, pond.height);
+            drawPond(ctx, pond);
         }
     }
 
