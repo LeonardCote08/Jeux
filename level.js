@@ -3,7 +3,7 @@ import { drawTreeBlock, drawFlower, drawPond } from './assetLoader.js';
 import { PriorityQueue } from './PriorityQueue.js';
 
 const WATER_TILE_SIZE = 8; // Taille réelle d'une tuile d'eau en pixels
-
+const SCALED_WATER_TILE_SIZE = WATER_TILE_SIZE * CONFIG.waterTileScale;
 
 export class Level {
     constructor(width, height, entrancePos = null) {
@@ -94,13 +94,13 @@ export class Level {
 
     canPlacePond(pond) {
         const {shape, centerX, centerY} = pond;
-        const halfSize = Math.floor(shape.length / 2) * WATER_TILE_SIZE;
+        const halfSize = Math.floor(shape.length / 2) * SCALED_WATER_TILE_SIZE;
     
         for (let dy = 0; dy < shape.length; dy++) {
             for (let dx = 0; dx < shape[dy].length; dx++) {
                 if (shape[dy][dx]) {
-                    const worldX = Math.floor((centerX - halfSize + dx * WATER_TILE_SIZE) / CONFIG.cellSize);
-                    const worldY = Math.floor((centerY - halfSize + dy * WATER_TILE_SIZE) / CONFIG.cellSize);
+                    const worldX = Math.floor((centerX - halfSize + dx * SCALED_WATER_TILE_SIZE) / CONFIG.cellSize);
+                    const worldY = Math.floor((centerY - halfSize + dy * SCALED_WATER_TILE_SIZE) / CONFIG.cellSize);
                     if (worldX < 1 || worldX >= this.width - 1 || worldY < 1 || worldY >= this.height - 1 || this.maze[worldY][worldX] !== 0) {
                         return false;
                     }
@@ -112,13 +112,13 @@ export class Level {
 
     markPondArea(pond) {
         const {shape, centerX, centerY} = pond;
-        const halfSize = Math.floor(shape.length / 2) * WATER_TILE_SIZE;
+        const halfSize = Math.floor(shape.length / 2) * SCALED_WATER_TILE_SIZE;
     
         for (let dy = 0; dy < shape.length; dy++) {
             for (let dx = 0; dx < shape[dy].length; dx++) {
                 if (shape[dy][dx]) {
-                    const worldX = Math.floor((centerX - halfSize + dx * WATER_TILE_SIZE) / CONFIG.cellSize);
-                    const worldY = Math.floor((centerY - halfSize + dy * WATER_TILE_SIZE) / CONFIG.cellSize);
+                    const worldX = Math.floor((centerX - halfSize + dx * SCALED_WATER_TILE_SIZE) / CONFIG.cellSize);
+                    const worldY = Math.floor((centerY - halfSize + dy * SCALED_WATER_TILE_SIZE) / CONFIG.cellSize);
                     this.maze[worldY][worldX] = 2; // 2 représente un étang
                 }
             }
@@ -377,7 +377,7 @@ export class Level {
     
     // Nouvelle fonction dans level.js
     generateOrganicPondShape(centerX, centerY, maxRadius) {
-        const pondSizeInTiles = Math.floor(maxRadius * 2 * CONFIG.cellSize / WATER_TILE_SIZE);
+        const pondSizeInTiles = Math.floor(maxRadius * 2 * CONFIG.cellSize / SCALED_WATER_TILE_SIZE);
         const shape = Array(pondSizeInTiles).fill().map(() => Array(pondSizeInTiles).fill(false));
         const queue = [{x: Math.floor(pondSizeInTiles / 2), y: Math.floor(pondSizeInTiles / 2)}];
         shape[Math.floor(pondSizeInTiles / 2)][Math.floor(pondSizeInTiles / 2)] = true;

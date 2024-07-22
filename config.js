@@ -3,12 +3,13 @@ export const CONFIG = {
     gridWidth: 19,
     gridHeight: 19,
     treeDensity: 0.4,
-    playerSpeed: 2.5, //par défaut était à 2
+    playerSpeed: 2.5,
     animationSpeed: 5,
     minEntranceExitDistance: 15,
     spriteSize: 64,
     playerHitboxSize: 20,
     treeHitboxSize: 28,
-    minPathLengthFactor: 3.5,  // Augmenté de 2.5 à 3.5
-    minAdditionalPathLength: 10,  // Nouvelle constante pour une longueur additionnelle minimale
+    minPathLengthFactor: 3.5,
+    minAdditionalPathLength: 10,
+    waterTileScale: 2, // Nouvelle variable pour l'échelle des tuiles d'eau
 };

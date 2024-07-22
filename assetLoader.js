@@ -25,7 +25,8 @@ let waterAnimationFrame = 0;
 const ANIMATION_SPEED = 500; 
 let animationCounter = 0;
 const ANIMATION_FRAME_RATE = 60; // Nombre de frames par seconde du jeu
-const WATER_TILE_SIZE = 8; // Taille réelle d'une tuile d'eau en pixels
+const WATER_TILE_SIZE = 8; // Taille de base d'une tuile d'eau en pixels
+const SCALED_WATER_TILE_SIZE = WATER_TILE_SIZE * CONFIG.waterTileScale;
 export let grassTexture;
 
 export async function loadAssets() {
@@ -125,13 +126,13 @@ function extractSprite(sheet, col, row) {
 export function drawPond(ctx, pond) {
     const pondImage = pondSidesImages[waterAnimationFrame];
     const {shape, centerX, centerY} = pond;
-    const halfSize = Math.floor(shape.length / 2) * WATER_TILE_SIZE;
+    const halfSize = Math.floor(shape.length / 2) * SCALED_WATER_TILE_SIZE;
 
     for (let dy = 0; dy < shape.length; dy++) {
         for (let dx = 0; dx < shape[dy].length; dx++) {
             if (shape[dy][dx]) {
-                const worldX = centerX - halfSize + dx * WATER_TILE_SIZE;
-                const worldY = centerY - halfSize + dy * WATER_TILE_SIZE;
+                const worldX = centerX - halfSize + dx * SCALED_WATER_TILE_SIZE;
+                const worldY = centerY - halfSize + dy * SCALED_WATER_TILE_SIZE;
                 const tileType = getPondTileType(shape, dx, dy);
                 drawPondTile(ctx, pondImage, worldX, worldY, tileType);
             }
@@ -158,7 +159,11 @@ function drawPondTile(ctx, image, x, y, tileType) {
         case 'innerBottomRight': sx = WATER_TILE_SIZE; sy = WATER_TILE_SIZE; break;
     }
 
-    ctx.drawImage(image, sx, sy, WATER_TILE_SIZE, WATER_TILE_SIZE, x, y, WATER_TILE_SIZE, WATER_TILE_SIZE);
+    ctx.drawImage(
+        image, 
+        sx, sy, WATER_TILE_SIZE, WATER_TILE_SIZE, 
+        x, y, SCALED_WATER_TILE_SIZE, SCALED_WATER_TILE_SIZE
+    );
 }
 
 function getPondTileType(shape, x, y) {
