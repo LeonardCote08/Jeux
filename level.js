@@ -332,6 +332,45 @@ export class Level {
         }
     }
 
+    widenUnicellularPaths(shape) {
+        const width = shape.length;
+        const height = shape[0].length;
+    
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                if (shape[y][x]) {
+                    let neighbors = this.countWaterNeighbors(shape, x, y);
+                    if (neighbors === 1) {
+                        // C'est un chemin unicellulaire, on l'élargit
+                        this.widenCell(shape, x, y);
+                    }
+                }
+            }
+        }
+    }
+
+    countWaterNeighbors(shape, x, y) {
+        const directions = [{dx: -1, dy: 0}, {dx: 1, dy: 0}, {dx: 0, dy: -1}, {dx: 0, dy: 1}];
+        return directions.filter(({dx, dy}) => {
+            const newX = x + dx;
+            const newY = y + dy;
+            return newX >= 0 && newX < shape.length && newY >= 0 && newY < shape[0].length && shape[newY][newX];
+        }).length;
+    }
+    
+    // Nouvelle fonction auxiliaire dans level.js
+    widenCell(shape, x, y) {
+        const directions = [{dx: -1, dy: 0}, {dx: 1, dy: 0}, {dx: 0, dy: -1}, {dx: 0, dy: 1}];
+        for (const {dx, dy} of directions) {
+            const newX = x + dx;
+            const newY = y + dy;
+            if (newX >= 0 && newX < shape.length && newY >= 0 && newY < shape[0].length && !shape[newY][newX]) {
+                shape[newY][newX] = true;
+                return; // On n'élargit que dans une direction
+            }
+        }
+    }
+
     
     // Nouvelle fonction dans level.js
     generateOrganicPondShape(centerX, centerY, maxRadius) {
@@ -348,15 +387,18 @@ export class Level {
                 const newY = y + dy;
                 if (newX >= 0 && newX < shape.length && newY >= 0 && newY < shape[0].length) {
                     const distance = Math.sqrt(Math.pow(newX - maxRadius, 2) + Math.pow(newY - maxRadius, 2));
-                    if (!shape[newX][newY] && distance <= maxRadius && Math.random() < 0.7) {
-                        shape[newX][newY] = true;
+                    if (!shape[newY][newX] && distance <= maxRadius && Math.random() < 0.7) {
+                        shape[newY][newX] = true;
                         queue.push({x: newX, y: newY});
                     }
                 }
             }
         }
     
-        // Assurons-nous que les extrémités sont correctement formées
+        // Élargir les chemins unicellulaires
+        this.widenUnicellularPaths(shape);
+    
+        // Assurer que les extrémités sont correctement formées
         this.ensureValidPondExtremities(shape);
     
         // Vérification de la taille minimale
@@ -376,23 +418,29 @@ export class Level {
             for (let x = 0; x < width; x++) {
                 if (shape[y][x]) {
                     // Vérifier et corriger les extrémités
-                    if (y === 0 || !shape[y-1][x]) { // Extrémité supérieure
-                        if (x > 0) shape[y][x-1] = true;
-                        if (x < width - 1) shape[y][x+1] = true;
-                    }
-                    if (y === height - 1 || !shape[y+1][x]) { // Extrémité inférieure
-                        if (x > 0) shape[y][x-1] = true;
-                        if (x < width - 1) shape[y][x+1] = true;
-                    }
-                    if (x === 0 || !shape[y][x-1]) { // Extrémité gauche
-                        if (y > 0) shape[y-1][x] = true;
-                        if (y < height - 1) shape[y+1][x] = true;
-                    }
-                    if (x === width - 1 || !shape[y][x+1]) { // Extrémité droite
-                        if (y > 0) shape[y-1][x] = true;
-                        if (y < height - 1) shape[y+1][x] = true;
+                    let neighbors = this.countWaterNeighbors(shape, x, y);
+                    if (neighbors === 1) {
+                        // C'est une extrémité, on s'assure qu'elle forme un "L"
+                        this.formLShape(shape, x, y);
                     }
                 }
+            }
+        }
+    }
+
+    formLShape(shape, x, y) {
+        const directions = [
+            {dx: -1, dy: -1}, {dx: 0, dy: -1}, {dx: 1, dy: -1},
+            {dx: -1, dy: 0},                   {dx: 1, dy: 0},
+            {dx: -1, dy: 1},  {dx: 0, dy: 1},  {dx: 1, dy: 1}
+        ];
+    
+        for (const {dx, dy} of directions) {
+            const newX = x + dx;
+            const newY = y + dy;
+            if (newX >= 0 && newX < shape.length && newY >= 0 && newY < shape[0].length && !shape[newY][newX]) {
+                shape[newY][newX] = true;
+                return; // On n'ajoute qu'une cellule pour former le "L"
             }
         }
     }
