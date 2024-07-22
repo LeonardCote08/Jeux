@@ -2,7 +2,7 @@ import { CONFIG } from './config.js';
 import { drawTreeBlock, drawFlower, drawPond } from './assetLoader.js';
 import { PriorityQueue } from './PriorityQueue.js';
 
-const WATER_TILE_SIZE = 8; // Taille réelle d'une tuile d'eau en pixels
+const WATER_TILE_SIZE = 8;
 const SCALED_WATER_TILE_SIZE = WATER_TILE_SIZE * CONFIG.waterTileScale;
 
 export class Level {
@@ -20,7 +20,6 @@ export class Level {
         this.maxPondSize = 4;
         this.minPathLength = Math.floor(Math.max(width, height) * CONFIG.minPathLengthFactor);
         
-        // Pré-calcul des directions pour optimiser les boucles
         this.directions = [
             {dx: 0, dy: 1}, {dx: 1, dy: 0}, 
             {dx: 0, dy: -1}, {dx: -1, dy: 0}
@@ -41,17 +40,14 @@ export class Level {
     }
 
     initializeMaze() {
-        this.maze = Array(this.height).fill().map((_, y) => 
-            Array(this.width).fill().map((_, x) => 
-                (x === 0 || x === this.width - 1 || y === 0 || y === this.height - 1) ? 1 : 
-                (Math.random() < 0.3 ? 1 : 0)
+        this.maze = Array.from({ length: this.height }, (_, y) => 
+            Array.from({ length: this.width }, (_, x) => 
+                this.isBorderCell(x, y) ? 1 : (Math.random() < 0.3 ? 1 : 0)
             )
         );
         
-        this.treeTypes = Array(this.height).fill().map(() => 
-            Array(this.width).fill().map(() => 
-                Math.random() < 0.15 ? 'apple' : 'normal'
-            )
+        this.treeTypes = Array.from({ length: this.height }, () => 
+            Array.from({ length: this.width }, () => Math.random() < 0.15 ? 'apple' : 'normal')
         );
     }
 
@@ -158,16 +154,14 @@ export class Level {
                 const neighbors = this.getUnvisitedNeighbors(current);
                 for (const neighbor of neighbors) {
                     stack.push(neighbor);
-                    // Augmenter la probabilité de créer des chemins supplémentaires
-                    if (Math.random() < 0.7) {  // Augmenté de 0.5 à 0.7
-                        const midX = (current.x + neighbor.x) / 2;
-                        const midY = (current.y + neighbor.y) / 2;
-                        this.maze[Math.floor(midY)][Math.floor(midX)] = 0;
+                    if (Math.random() < 0.7) {
+                        const midX = Math.floor((current.x + neighbor.x) / 2);
+                        const midY = Math.floor((current.y + neighbor.y) / 2);
+                        this.maze[midY][midX] = 0;
                     }
                 }
     
-                // Ajouter des chemins supplémentaires aléatoires
-                if (Math.random() < 0.3) {  // 30% de chance d'ajouter un chemin supplémentaire
+                if (Math.random() < 0.3) {
                     const randomNeighbor = this.getRandomNeighbor(current);
                     if (randomNeighbor) {
                         this.maze[randomNeighbor.y][randomNeighbor.x] = 0;
@@ -341,12 +335,8 @@ export class Level {
     
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
-                if (shape[y][x]) {
-                    let neighbors = this.countWaterNeighbors(shape, x, y);
-                    if (neighbors === 1) {
-                        // C'est un chemin unicellulaire, on l'élargit
-                        this.widenCell(shape, x, y);
-                    }
+                if (shape[y][x] && this.countWaterNeighbors(shape, x, y) === 1) {
+                    this.widenCell(shape, x, y);
                 }
             }
         }
@@ -374,23 +364,20 @@ export class Level {
         }
     }
 
-    
-    // Nouvelle fonction dans level.js
     generateOrganicPondShape(centerX, centerY, maxRadius) {
         const pondSizeInTiles = Math.floor(maxRadius * 2 * CONFIG.cellSize / SCALED_WATER_TILE_SIZE);
-        const shape = Array(pondSizeInTiles).fill().map(() => Array(pondSizeInTiles).fill(false));
+        const shape = Array.from({ length: pondSizeInTiles }, () => Array(pondSizeInTiles).fill(false));
         const queue = [{x: Math.floor(pondSizeInTiles / 2), y: Math.floor(pondSizeInTiles / 2)}];
         shape[Math.floor(pondSizeInTiles / 2)][Math.floor(pondSizeInTiles / 2)] = true;
     
         while (queue.length > 0) {
             const {x, y} = queue.shift();
-            const directions = [{dx: -1, dy: 0}, {dx: 1, dy: 0}, {dx: 0, dy: -1}, {dx: 0, dy: 1}];
     
-            for (const {dx, dy} of directions) {
+            for (const {dx, dy} of this.directions) {
                 const newX = x + dx;
                 const newY = y + dy;
-                if (newX >= 0 && newX < pondSizeInTiles && newY >= 0 && newY < pondSizeInTiles) {
-                    const distance = Math.sqrt(Math.pow(newX - pondSizeInTiles / 2, 2) + Math.pow(newY - pondSizeInTiles / 2, 2));
+                if (this.isValidPondTile(newX, newY, pondSizeInTiles)) {
+                    const distance = Math.hypot(newX - pondSizeInTiles / 2, newY - pondSizeInTiles / 2);
                     if (!shape[newY][newX] && distance <= pondSizeInTiles / 2 && Math.random() < 0.7) {
                         shape[newY][newX] = true;
                         queue.push({x: newX, y: newY});
@@ -402,16 +389,16 @@ export class Level {
         this.widenUnicellularPaths(shape);
         this.ensureValidPondExtremities(shape);
     
-        let waterTiles = shape.flat().filter(tile => tile).length;
-        if (waterTiles < 4) {
-            return null;
-        }
-    
-        return {
+        const waterTiles = shape.flat().filter(Boolean).length;
+        return waterTiles >= 4 ? {
             shape,
             centerX: centerX * CONFIG.cellSize,
             centerY: centerY * CONFIG.cellSize
-        };
+        } : null;
+    }
+
+    isValidPondTile(x, y, size) {
+        return x >= 0 && x < size && y >= 0 && y < size;
     }
 
 
@@ -421,31 +408,25 @@ export class Level {
     
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
-                if (shape[y][x]) {
-                    // Vérifier et corriger les extrémités
-                    let neighbors = this.countWaterNeighbors(shape, x, y);
-                    if (neighbors === 1) {
-                        // C'est une extrémité, on s'assure qu'elle forme un "L"
-                        this.formLShape(shape, x, y);
-                    }
+                if (shape[y][x] && this.countWaterNeighbors(shape, x, y) === 1) {
+                    this.formLShape(shape, x, y);
                 }
             }
         }
     }
 
     formLShape(shape, x, y) {
-        const directions = [
-            {dx: -1, dy: -1}, {dx: 0, dy: -1}, {dx: 1, dy: -1},
-            {dx: -1, dy: 0},                   {dx: 1, dy: 0},
-            {dx: -1, dy: 1},  {dx: 0, dy: 1},  {dx: 1, dy: 1}
+        const diagonals = [
+            {dx: -1, dy: -1}, {dx: 1, dy: -1},
+            {dx: -1, dy: 1},  {dx: 1, dy: 1}
         ];
     
-        for (const {dx, dy} of directions) {
+        for (const {dx, dy} of diagonals) {
             const newX = x + dx;
             const newY = y + dy;
-            if (newX >= 0 && newX < shape.length && newY >= 0 && newY < shape[0].length && !shape[newY][newX]) {
+            if (this.isValidPondTile(newX, newY, shape.length) && !shape[newY][newX]) {
                 shape[newY][newX] = true;
-                return; // On n'ajoute qu'une cellule pour former le "L"
+                return;
             }
         }
     }
@@ -454,20 +435,35 @@ export class Level {
         return x === 0 || x === this.width - 1 || y === 0 || y === this.height - 1;
     }
 
-    removeDeadEnds() {
-        for (let y = 1; y < this.height - 1; y++) {
-            for (let x = 1; x < this.width - 1; x++) {
-                if (this.maze[y][x] === 0) {
-                    const wallCount = this.directions.reduce((count, dir) => 
-                        count + (this.maze[y + dir.dy][x + dir.dx] === 1 ? 1 : 0), 0);
+    countWallNeighbors(x, y) {
+        return this.directions.reduce((count, dir) => 
+            count + (this.maze[y + dir.dy][x + dir.dx] === 1 ? 1 : 0), 0);
+    }
+    getRandomOpenDirection(x, y) {
+        const openDirections = this.directions.filter(dir => 
+            this.maze[y + dir.dy][x + dir.dx] === 1);
+        return openDirections[Math.floor(Math.random() * openDirections.length)];
+    }
 
-                    if (wallCount >= 3) {
-                        const openDir = this.directions[Math.floor(Math.random() * this.directions.length)];
-                        this.maze[y + openDir.dy][x + openDir.dx] = 0;
+    removeDeadEnds() {
+        let hasChanges;
+        do {
+            hasChanges = false;
+            for (let y = 1; y < this.height - 1; y++) {
+                for (let x = 1; x < this.width - 1; x++) {
+                    if (this.maze[y][x] === 0) {
+                        const wallCount = this.countWallNeighbors(x, y);
+                        if (wallCount >= 3) {
+                            const openDir = this.getRandomOpenDirection(x, y);
+                            if (openDir) {
+                                this.maze[y + openDir.dy][x + openDir.dx] = 0;
+                                hasChanges = true;
+                            }
+                        }
                     }
                 }
             }
-        }
+        } while (hasChanges);
     }
 
     isValid(x, y) {
@@ -497,7 +493,7 @@ export class Level {
             drawFlower(ctx, flower.x, flower.y, flower.type);
         }
 
-            // Dessiner les étangs
+        // Dessiner les étangs
         for (const pond of this.ponds) {
             drawPond(ctx, pond);
         }
