@@ -51,9 +51,6 @@ async function loadFlowerImages() {
     }
 }
 
-async function loadPondImage() {
-    pondImage = await loadImage('Assets/props/water/Water1.png');
-}
 
 async function loadPlayerSprites() {
     const walkSheet = await loadImage('Assets/player/minotaur/MinotaurWalk.png');
@@ -125,33 +122,42 @@ function extractSprite(sheet, col, row) {
 }
 
 export function drawPond(ctx, x, y, width, height) {
-    const cellSize = CONFIG.cellSize;
-    const drawX = x * cellSize;
-    const drawY = y * cellSize;
+    const pondImage = pondSidesImages[waterAnimationFrame];
+    const sourceSize = 8; // Taille d'une tuile dans l'image source
+    const drawX = x * CONFIG.cellSize;
+    const drawY = y * CONFIG.cellSize;
 
-    // Dessiner les coins
-    drawPondPart(ctx, drawX, drawY, 0, 0); // Coin supérieur gauche
-    drawPondPart(ctx, drawX + width - 8, drawY, 2, 0); // Coin supérieur droit
-    drawPondPart(ctx, drawX, drawY + height - 8, 0, 2); // Coin inférieur gauche
-    drawPondPart(ctx, drawX + width - 8, drawY + height - 8, 2, 2); // Coin inférieur droit
+    // Calculer combien de tuiles complètes sont nécessaires
+    const tilesWidth = Math.ceil(width / sourceSize);
+    const tilesHeight = Math.ceil(height / sourceSize);
 
-    // Dessiner les bords
-    for (let i = 8; i < width - 8; i += 8) {
-        drawPondPart(ctx, drawX + i, drawY, 1, 0); // Bord supérieur
-        drawPondPart(ctx, drawX + i, drawY + height - 8, 1, 2); // Bord inférieur
-    }
-    for (let i = 8; i < height - 8; i += 8) {
-        drawPondPart(ctx, drawX, drawY + i, 0, 1); // Bord gauche
-        drawPondPart(ctx, drawX + width - 8, drawY + i, 2, 1); // Bord droit
-    }
+    for (let tileY = 0; tileY < tilesHeight; tileY++) {
+        for (let tileX = 0; tileX < tilesWidth; tileX++) {
+            let sx, sy;
 
-    // Remplir le centre
-    for (let i = 8; i < width - 8; i += 8) {
-        for (let j = 8; j < height - 8; j += 8) {
-            drawPondPart(ctx, drawX + i, drawY + j, 1, 1);
+            // Déterminer quelle partie de l'image source utiliser
+            if (tileY === 0) sy = 0;
+            else if (tileY === tilesHeight - 1) sy = 16;
+            else sy = 8;
+
+            if (tileX === 0) sx = 0;
+            else if (tileX === tilesWidth - 1) sx = 16;
+            else sx = 8;
+
+            // Calculer la taille de dessin pour cette tuile
+            const drawWidth = Math.min(sourceSize, width - tileX * sourceSize);
+            const drawHeight = Math.min(sourceSize, height - tileY * sourceSize);
+
+            ctx.drawImage(
+                pondImage,
+                sx, sy, sourceSize, sourceSize,
+                drawX + tileX * sourceSize, drawY + tileY * sourceSize, drawWidth, drawHeight
+            );
         }
     }
 }
+
+
 
 export function updateWaterAnimation() {
     animationCounter++;

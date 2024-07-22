@@ -70,44 +70,35 @@ export class Level {
     }
 
     addRandomPonds() {
-        const pondDensity = 0.01;
+        const pondDensity = 0.02;
+        const minPondSize = 24; // 3 tuiles de 8 pixels
+        const maxPondSize = 64; // 8 tuiles de 8 pixels
 
         for (let y = 1; y < this.height - 1; y++) {
             for (let x = 1; x < this.width - 1; x++) {
                 if (this.maze[y][x] === 0 && Math.random() < pondDensity) {
-                    let pondWidth = Math.floor(Math.random() * (this.maxPondSize - this.minPondSize + 1)) + this.minPondSize;
-                    let pondHeight = Math.floor(Math.random() * (this.maxPondSize - this.minPondSize + 1)) + this.minPondSize;
+                    let pondWidth = Math.floor(Math.random() * (maxPondSize - minPondSize + 1) + minPondSize);
+                    let pondHeight = Math.floor(Math.random() * (maxPondSize - minPondSize + 1) + minPondSize);
 
-                    while (pondWidth === pondHeight && Math.random() < 0.7) {
-                        pondHeight = Math.floor(Math.random() * (this.maxPondSize - this.minPondSize + 1)) + this.minPondSize;
-                    }
+                    // Arrondir à un multiple de 8 pour correspondre aux tuiles de l'image
+                    pondWidth = Math.round(pondWidth / 8) * 8;
+                    pondHeight = Math.round(pondHeight / 8) * 8;
 
-                    pondWidth *= CONFIG.cellSize;
-                    pondHeight *= CONFIG.cellSize;
-
-                    if (this.canPlacePond(x, y, pondWidth / CONFIG.cellSize, pondHeight / CONFIG.cellSize)) {
+                    if (this.canPlacePond(x, y, pondWidth / 8, pondHeight / 8)) {
                         this.ponds.push({ x, y, width: pondWidth, height: pondHeight });
-                        this.markPondArea(x, y, pondWidth / CONFIG.cellSize, pondHeight / CONFIG.cellSize);
+                        this.markPondArea(x, y, pondWidth / 8, pondHeight / 8);
                     }
                 }
             }
         }
     }
 
-    markPondArea(x, y, width, height) {
-        for (let dy = 0; dy < height; dy++) {
-            for (let dx = 0; dx < width; dx++) {
-                this.maze[y + dy][x + dx] = 2;
-            }
-        }
-    }
-
-    canPlacePond(x, y, width, height) {
-        if (x + width > this.width || y + height > this.height) {
+    canPlacePond(x, y, widthInCells, heightInCells) {
+        if (x + widthInCells > this.width - 1 || y + heightInCells > this.height - 1) {
             return false;
         }
-        for (let dy = 0; dy < height; dy++) {
-            for (let dx = 0; dx < width; dx++) {
+        for (let dy = 0; dy < heightInCells; dy++) {
+            for (let dx = 0; dx < widthInCells; dx++) {
                 const checkX = x + dx;
                 const checkY = y + dy;
                 if (this.maze[checkY][checkX] !== 0 || this.isNearBorder(checkX, checkY)) {
@@ -116,6 +107,14 @@ export class Level {
             }
         }
         return true;
+    }
+
+    markPondArea(x, y, widthInCells, heightInCells) {
+        for (let dy = 0; dy < heightInCells; dy++) {
+            for (let dx = 0; dx < widthInCells; dx++) {
+                this.maze[y + dy][x + dx] = 2; // 2 représente un étang
+            }
+        }
     }
 
     isNearBorder(x, y) {

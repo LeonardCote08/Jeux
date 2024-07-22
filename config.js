@@ -3,7 +3,7 @@ export const CONFIG = {
     gridWidth: 19,
     gridHeight: 19,
     treeDensity: 0.4,
-    playerSpeed: 2,
+    playerSpeed: 2.5, //par défaut était à 2
     animationSpeed: 5,
     minEntranceExitDistance: 15,
     spriteSize: 64,
