@@ -2,6 +2,7 @@ import { CONFIG } from './config.js';
 import { Level } from './level.js';
 import { Player } from './player.js';
 import { grassTexture } from './assetLoader.js';
+import { ProgressBar } from './ProgressBar.js';
 
 export class Game {
     constructor(canvas, ctx, playerSprites, playerShadows) {
@@ -14,8 +15,10 @@ export class Game {
         this.currentLevelNumber = 1;
         this.lastUpdateTime = 0;
         
-        // Pré-calcul du pattern d'herbe pour optimiser le rendu
         this.grassPattern = this.createGrassPattern();
+
+        this.maxLevel = 10;
+        this.progressBar = new ProgressBar(this.maxLevel);
     }
 
     // Crée et met en cache le pattern d'herbe pour une utilisation répétée
@@ -58,12 +61,19 @@ export class Game {
     
         if (this.hasReachedExit()) {
             this.goToNextLevel();
-            return; // Arrêter le traitement après la transition
         }
+
+        // Mettre à jour la barre de progression
+        this.progressBar.update(this.currentLevelNumber);
     }
 
     goToNextLevel() {
         this.currentLevelNumber++;
+        if (this.currentLevelNumber > this.maxLevel) {
+            // Gérer la fin du jeu ici
+            console.log("Félicitations ! Vous avez terminé le jeu !");
+            this.currentLevelNumber = 1; // Recommencer depuis le début
+        }
         const entrancePos = {
             x: this.level.exit.x === 0 ? CONFIG.gridWidth - 1 : (this.level.exit.x === CONFIG.gridWidth - 1 ? 0 : this.level.exit.x),
             y: this.level.exit.y === 0 ? CONFIG.gridHeight - 1 : (this.level.exit.y === CONFIG.gridHeight - 1 ? 0 : this.level.exit.y)
@@ -246,19 +256,10 @@ export class Game {
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Utilisation du pattern d'herbe pré-calculé
         this.ctx.fillStyle = this.grassPattern;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Rendu optimisé du niveau
         this.level.draw(this.ctx);
-        
-        // Rendu du joueur
         this.player.draw(this.ctx, this.playerSprites, this.playerShadows);
-        
-        // Affichage du numéro de niveau
-        this.ctx.fillStyle = 'white';
-        this.ctx.font = '20px Arial';
-        this.ctx.fillText(`Niveau: ${this.currentLevelNumber}`, 10, 30);
     }
 }

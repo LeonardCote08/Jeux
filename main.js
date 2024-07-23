@@ -30,15 +30,18 @@ function handleKeyUp(e) {
     if (['arrowleft', 'a', 'arrowright', 'd', 'arrowup', 'w', 'arrowdown', 's'].includes(key)) {
         keysPressed.delete(key);
     }
-    // Nous ne réinitialisons plus jumpRequested ici pour permettre le buffering
 }
 
 document.addEventListener('keydown', handleKeyDown);
 document.addEventListener('keyup', handleKeyUp);
 
 let game;
+let lastTime = 0;
 
 function gameLoop(currentTime) {
+    const deltaTime = currentTime - lastTime;
+    lastTime = currentTime;
+
     const input = {
         left: keysPressed.has('arrowleft') || keysPressed.has('a'),
         right: keysPressed.has('arrowright') || keysPressed.has('d'),
@@ -48,17 +51,16 @@ function gameLoop(currentTime) {
     };
 
     game.update(input, currentTime);
-    updateWaterAnimation(); // Mettre à jour l'animation de l'eau
+    updateWaterAnimation();
     game.draw();
     
     if (jumpRequested) {
-        game.player.requestJump(); // Utiliser requestJump au lieu de jump
-        jumpRequested = false; // Réinitialiser la demande de saut après l'avoir traitée
+        game.player.requestJump();
+        jumpRequested = false;
     }
     
     requestAnimationFrame(gameLoop);
 }
-
 
 async function initGame() {
     try {
