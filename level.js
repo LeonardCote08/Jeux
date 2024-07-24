@@ -95,7 +95,7 @@ export class Level {
     generateLeaves() {
         this.leafDensityMap = Array(this.height).fill().map(() => Array(this.width).fill(0));
         this.generateMainLeafAreas();
-        this.addLeafBorders();
+        this.addMandatoryLeafBorders();
         this.addPatternX();
         this.addTransitionLeaves();
     }
@@ -134,7 +134,7 @@ export class Level {
                         const pattern = this.chooseTransitionPattern(nearbyDensity);
                         if (pattern) {
                             this.leaves.push({ x, y, pattern });
-                            this.leafDensityMap[y][x] = pattern.startsWith('single') ? 0.1 : 0.3;
+                            this.leafDensityMap[y][x] = 0.3;
                         }
                     }
                 }
@@ -169,12 +169,12 @@ export class Level {
 
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
-                if (this.leafDensityMap[y][x] === 1) {
+                if (this.isMainLeafPattern(x, y)) {
                     for (let i = 0; i < directions.length; i++) {
                         const [dx, dy] = directions[i];
                         const newX = x + dx;
                         const newY = y + dy;
-                        if (this.isEmptyCell(newX, newY) && this.leafDensityMap[newY][newX] === 0) {
+                        if (this.isEmptyCell(newX, newY) && !this.isMainLeafPattern(newX, newY)) {
                             this.leaves.push({ x: newX, y: newY, pattern: borderPatterns[i] });
                             this.leafDensityMap[newY][newX] = 0.7;
                         }
@@ -182,6 +182,12 @@ export class Level {
                 }
             }
         }
+    }
+
+    isMainLeafPattern(x, y) {
+        const mainPatterns = ['B', 'C', 'D', 'E-center'];
+        const leaf = this.leaves.find(l => l.x === x && l.y === y);
+        return leaf && mainPatterns.includes(leaf.pattern);
     }
 
     addBorderLeaves(x, y, patterns) {
@@ -226,16 +232,43 @@ export class Level {
                 const newX = x + dx;
                 const newY = y + dy;
                 if (this.isEmptyCell(newX, newY)) {
-                    let clusterPattern = pattern;
-                    if (dx === 0) clusterPattern = 'E-left';
-                    else if (dx === size - 1) clusterPattern = 'E-right';
-                    else if (dy === 0) clusterPattern = 'E-top';
-                    else if (dy === size - 1) clusterPattern = 'E-bottom';
-                    
-                    this.leaves.push({ x: newX, y: newY, pattern: clusterPattern });
+                    this.leaves.push({ x: newX, y: newY, pattern });
                     this.leafDensityMap[newY][newX] = 1;
                 }
             }
+        }
+    }
+
+    addMandatoryLeafBorders() {
+        const directions = [
+            { dx: 1, dy: 0, pattern: 'E-right' },
+            { dx: -1, dy: 0, pattern: 'E-left' },
+            { dx: 0, dy: -1, pattern: 'E-top' },
+            { dx: 0, dy: 1, pattern: 'E-bottom' }
+        ];
+
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                if (this.isMainLeafPattern(x, y)) {
+                    for (const dir of directions) {
+                        const newX = x + dir.dx;
+                        const newY = y + dir.dy;
+                        if (this.isValidCell(newX, newY) && !this.isMainLeafPattern(newX, newY)) {
+                            // Si la cellule adjacente est vide ou contient déjà un pattern E, nous le remplaçons
+                            this.removeExistingLeaf(newX, newY);
+                            this.leaves.push({ x: newX, y: newY, pattern: dir.pattern });
+                            this.leafDensityMap[newY][newX] = 0.7;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    removeExistingLeaf(x, y) {
+        const index = this.leaves.findIndex(leaf => leaf.x === x && leaf.y === y);
+        if (index !== -1) {
+            this.leaves.splice(index, 1);
         }
     }
 
