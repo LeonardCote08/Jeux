@@ -96,6 +96,7 @@ export class Level {
         this.leafDensityMap = Array(this.height).fill().map(() => Array(this.width).fill(0));
         this.generateMainLeafAreas();
         this.addLeafBorders();
+        this.addPatternX();
         this.addTransitionLeaves();
     }
 
@@ -143,7 +144,7 @@ export class Level {
     chooseTransitionPattern(density) {
         if (density > 0.4) return 'A';
         if (density > 0.2) return Math.random() < 0.5 ? 'twoLeaves1' : 'twoLeaves2';
-        if (density > 0.05 && Math.random() < 0.3) {  // Réduit la probabilité d'apparition des SingleLeave
+        if (density > 0.05 && Math.random() < 0.3) {
             const singleLeaves = ['singleLeaveBottomLeft', 'singleLeaveBottomRight', 'singleLeaveTopLeft', 'singleLeaveTopRight'];
             return singleLeaves[Math.floor(Math.random() * singleLeaves.length)];
         }
@@ -183,6 +184,28 @@ export class Level {
         }
     }
 
+    addBorderLeaves(x, y, patterns) {
+        const directions = [
+            { dx: 1, dy: 0, key: 'right' },
+            { dx: -1, dy: 0, key: 'left' },
+            { dx: 0, dy: -1, key: 'top' },
+            { dx: 0, dy: 1, key: 'bottom' },
+            { dx: -1, dy: -1, key: 'topLeft' },
+            { dx: 1, dy: -1, key: 'topRight' },
+            { dx: -1, dy: 1, key: 'bottomLeft' },
+            { dx: 1, dy: 1, key: 'bottomRight' }
+        ];
+
+        for (const dir of directions) {
+            const newX = x + dir.dx;
+            const newY = y + dir.dy;
+            if (this.isEmptyCell(newX, newY) && this.leafDensityMap[newY][newX] === 0) {
+                this.leaves.push({ x: newX, y: newY, pattern: patterns[dir.key] });
+                this.leafDensityMap[newY][newX] = 0.7;
+            }
+        }
+    }
+
     generateMainLeafAreas() {
         const mainPatterns = ['B', 'C', 'D', 'E-center'];
         const clusterCount = Math.floor(this.width * this.height * CONFIG.leafDensity);
@@ -203,10 +226,23 @@ export class Level {
                 const newX = x + dx;
                 const newY = y + dy;
                 if (this.isEmptyCell(newX, newY)) {
-                    this.leaves.push({ x: newX, y: newY, pattern });
+                    let clusterPattern = pattern;
+                    if (dx === 0) clusterPattern = 'E-left';
+                    else if (dx === size - 1) clusterPattern = 'E-right';
+                    else if (dy === 0) clusterPattern = 'E-top';
+                    else if (dy === size - 1) clusterPattern = 'E-bottom';
+                    
+                    this.leaves.push({ x: newX, y: newY, pattern: clusterPattern });
                     this.leafDensityMap[newY][newX] = 1;
                 }
             }
+        }
+    }
+
+    addClusterCorner(x, y, pattern) {
+        if (this.isEmptyCell(x, y)) {
+            this.leaves.push({ x, y, pattern });
+            this.leafDensityMap[y][x] = 1;
         }
     }
 
@@ -222,12 +258,37 @@ export class Level {
         if (y < this.height - 1) this.leaves.push({ x, y: y+1, pattern: 'E-bottom' });
     }
 
-    addPatternX(x, y) {
-        if (x < this.width - 1 && y < this.height - 1) {
-            this.leaves.push({ x, y, pattern: 'X-topLeft' });
-            this.leaves.push({ x: x+1, y, pattern: 'X-topRight' });
-            this.leaves.push({ x, y: y+1, pattern: 'X-bottomLeft' });
-            this.leaves.push({ x: x+1, y: y+1, pattern: 'X-bottomRight' });
+    addPatternX() {
+        for (let y = 0; y < this.height - 1; y++) {
+            for (let x = 0; x < this.width - 1; x++) {
+                if (this.canPlacePatternX(x, y)) {
+                    this.placePatternX(x, y);
+                }
+            }
+        }
+    }
+
+    canPlacePatternX(x, y) {
+        for (let dy = 0; dy < 2; dy++) {
+            for (let dx = 0; dx < 2; dx++) {
+                if (!this.isEmptyCell(x + dx, y + dy) || this.leafDensityMap[y + dy][x + dx] !== 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    placePatternX(x, y) {
+        const patterns = ['X-topLeft', 'X-topRight', 'X-bottomLeft', 'X-bottomRight'];
+        for (let i = 0; i < 2; i++) {
+            for (let j = 0; j < 2; j++) {
+                const newX = x + j;
+                const newY = y + i;
+                const patternIndex = i * 2 + j;
+                this.leaves.push({ x: newX, y: newY, pattern: patterns[patternIndex] });
+                this.leafDensityMap[newY][newX] = 0.5;
+            }
         }
     }
 
