@@ -91,6 +91,14 @@ export default class MazeGenerator {
 
     openEntranceAndExit(maze, entrance) {
         maze[entrance.y][entrance.x] = 0;
+        // Assurez-vous que les cellules adjacentes à l'entrée sont également ouvertes
+        for (const dir of this.directions) {
+            const newX = entrance.x + dir.dx;
+            const newY = entrance.y + dir.dy;
+            if (this.isValid(newX, newY)) {
+                maze[newY][newX] = 0;
+            }
+        }
     }
 
     getValidExitPosition(entrance, maze) {
@@ -172,12 +180,32 @@ export default class MazeGenerator {
     }
 
     ensureEntrancePathway(maze, entrance) {
-        for (const dir of this.directions) {
-            const newX = entrance.x + dir.dx;
-            const newY = entrance.y + dir.dy;
-            if (this.isValid(newX, newY)) {
-                maze[newY][newX] = 0;
+        const queue = [entrance];
+        const visited = new Set();
+        const key = (x, y) => `${x},${y}`;
+
+        while (queue.length > 0) {
+            const current = queue.shift();
+            const currentKey = key(current.x, current.y);
+
+            if (visited.has(currentKey)) continue;
+            visited.add(currentKey);
+
+            // Marquer cette cellule comme un chemin
+            maze[current.y][current.x] = 0;
+
+            // Si nous avons atteint une cellule qui n'est pas sur le bord, nous avons un chemin valide
+            if (!this.isBorderCell(current.x, current.y)) {
                 break;
+            }
+
+            // Ajouter les cellules voisines à la file d'attente
+            for (const dir of this.directions) {
+                const newX = current.x + dir.dx;
+                const newY = current.y + dir.dy;
+                if (this.isValid(newX, newY) && !visited.has(key(newX, newY))) {
+                    queue.push({x: newX, y: newY});
+                }
             }
         }
     }
