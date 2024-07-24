@@ -14,6 +14,7 @@ export class Game {
         this.player = null;
         this.currentLevelNumber = 1;
         this.lastUpdateTime = 0;
+        this.debugMode = false;
         
         this.grassPattern = this.createGrassPattern();
 
@@ -31,6 +32,11 @@ export class Game {
         return this.ctx.createPattern(patternCanvas, 'repeat');
     }
 
+    toggleDebugMode() {
+        this.debugMode = !this.debugMode;
+        this.level.debugMode = this.debugMode;
+    }
+
     startNewGame() {
         this.currentLevelNumber = 1;
         this.generateNewLevel();
@@ -38,7 +44,8 @@ export class Game {
 
     generateNewLevel(entrancePos = null) {
         this.level = new Level(CONFIG.gridWidth, CONFIG.gridHeight, entrancePos);
-        this.level.generate(); // Assurez-vous que cette ligne est présente et exécutée
+        this.level.debugMode = this.debugMode; // Propager le mode de débogage au niveau
+        this.level.generate();
         
         // Calcul optimisé de la position de départ du joueur
         const inset = CONFIG.cellSize * 0.1;

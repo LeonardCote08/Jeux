@@ -20,6 +20,7 @@ export class Level {
         this.leafDensityMap = Array(height).fill().map(() => Array(width).fill(0));
         this.minPondSize = 1;
         this.maxPondSize = 4;
+        this.debugMode = false;
         this.minPathLength = Math.floor(Math.max(width, height) * CONFIG.minPathLengthFactor);
         
         this.directions = [
@@ -642,8 +643,54 @@ export class Level {
 
         // Dessiner les feuilles
         for (const leaf of this.leaves) {
-            drawLeafPattern(ctx, leaf.pattern, leaf.x, leaf.y);
+            if (this.debugMode) {
+               this.drawDebugLeaf(ctx, leaf);
+            } else {
+                drawLeafPattern(ctx, leaf.pattern, leaf.x, leaf.y);
+            }
         }
+    }
+
+    
+
+    drawDebugLeaf(ctx, leaf) {
+        const cellSize = CONFIG.cellSize;
+        const x = leaf.x * cellSize;
+        const y = leaf.y * cellSize;
+
+        // Dessiner un rectangle de couleur en fonction du pattern
+        ctx.fillStyle = this.getDebugColor(leaf.pattern);
+        ctx.fillRect(x, y, cellSize, cellSize);
+
+        // Ajouter le nom du pattern
+        ctx.fillStyle = 'black';
+        ctx.font = '10px Arial';
+        ctx.fillText(leaf.pattern, x + 2, y + 10);
+    }
+
+    getDebugColor(pattern) {
+        const colors = {
+            'A': 'rgba(255, 0, 0, 0.5)',    // Rouge
+            'B': 'rgba(0, 255, 0, 0.5)',    // Vert
+            'C': 'rgba(0, 0, 255, 0.5)',    // Bleu
+            'D': 'rgba(255, 255, 0, 0.5)',  // Jaune
+            'E-center': 'rgba(255, 0, 255, 0.5)', // Magenta
+            'E-right': 'rgba(0, 255, 255, 0.5)',  // Cyan
+            'E-left': 'rgba(255, 128, 0, 0.5)',   // Orange
+            'E-top': 'rgba(128, 0, 255, 0.5)',    // Violet
+            'E-bottom': 'rgba(0, 128, 255, 0.5)', // Bleu clair
+            'X-bottomLeft': 'rgba(128, 128, 0, 0.5)',   // Olive
+            'X-bottomRight': 'rgba(128, 0, 128, 0.5)',  // Violet foncé
+            'X-topLeft': 'rgba(0, 128, 128, 0.5)',      // Sarcelle
+            'X-topRight': 'rgba(128, 128, 128, 0.5)',   // Gris
+            'twoLeaves1': 'rgba(255, 128, 128, 0.5)',   // Rose clair
+            'twoLeaves2': 'rgba(128, 255, 128, 0.5)',   // Vert clair
+            'singleLeaveBottomLeft': 'rgba(128, 128, 255, 0.5)',  // Bleu lavande
+            'singleLeaveBottomRight': 'rgba(255, 255, 128, 0.5)', // Jaune clair
+            'singleLeaveTopLeft': 'rgba(255, 128, 255, 0.5)',     // Rose
+            'singleLeaveTopRight': 'rgba(128, 255, 255, 0.5)'     // Cyan clair
+        };
+        return colors[pattern] || 'rgba(0, 0, 0, 0.5)'; // Noir par défaut
     }
 
     ensureEntrancePathway() {

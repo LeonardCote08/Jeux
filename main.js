@@ -35,6 +35,12 @@ function handleKeyUp(e) {
 document.addEventListener('keydown', handleKeyDown);
 document.addEventListener('keyup', handleKeyUp);
 
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'x' || e.key === 'X') {
+        game.toggleDebugMode();
+    }
+});
+
 let game;
 let lastTime = 0;
 
