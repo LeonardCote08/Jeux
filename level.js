@@ -17,6 +17,7 @@ export class Level {
         this.clearings = [];
         this.ponds = [];
         this.leaves = [];
+        this.leafDensityMap = Array(height).fill().map(() => Array(width).fill(0));
         this.minPondSize = 1;
         this.maxPondSize = 4;
         this.minPathLength = Math.floor(Math.max(width, height) * CONFIG.minPathLengthFactor);
@@ -91,34 +92,100 @@ export class Level {
     }
 
     generateLeaves() {
-        const leafPatterns = ['A', 'B', 'C', 'D', 'E', 'X'];
-        
+        this.generateMainLeafAreas();
+        this.addLeafBorders();
+        this.addTransitionLeaves();
+    }
+
+    addTransitionLeaves() {
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
-                if (this.maze[y][x] === 0 && Math.random() < CONFIG.leafDensity) {
-                    const pattern = leafPatterns[Math.floor(Math.random() * leafPatterns.length)];
-                    this.generateLeafCluster(x, y, pattern);
+                if (this.leafDensityMap[y][x] === 0 && this.maze[y][x] === 0) {
+                    const nearbyDensity = this.getNearbyLeafDensity(x, y);
+                    if (nearbyDensity > 0) {
+                        const pattern = this.chooseTransitionPattern(nearbyDensity);
+                        if (pattern) {
+                            this.leaves.push({ x, y, pattern });
+                            this.leafDensityMap[y][x] = 0.3;
+                        }
+                    }
                 }
             }
         }
     }
 
-    generateLeafCluster(startX, startY, pattern) {
-        const clusterSize = Math.floor(Math.random() * 3) + 2;  // Taille du cluster entre 2 et 4
-        
-        for (let y = startY; y < startY + clusterSize && y < this.height; y++) {
-            for (let x = startX; x < startX + clusterSize && x < this.width; x++) {
-                if (this.maze[y][x] === 0 && Math.random() < 0.7) {  // 70% de chance pour chaque cellule dans le cluster
-                    if (pattern === 'E') {
-                        this.addPatternE(x, y);
-                    } else if (pattern === 'X') {
-                        this.addPatternX(x, y);
-                    } else {
-                        this.leaves.push({ x, y, pattern });
+    chooseTransitionPattern(density) {
+        if (density > 0.5) return 'A';
+        if (density > 0.3) return Math.random() < 0.5 ? 'twoLeaves1' : 'twoLeaves2';
+        if (density > 0.1) {
+            const singleLeaves = ['singleLeaveBottomLeft', 'singleLeaveBottomRight', 'singleLeaveTopLeft', 'singleLeaveTopRight'];
+            return singleLeaves[Math.floor(Math.random() * singleLeaves.length)];
+        }
+        return null;
+    }
+
+    getNearbyLeafDensity(x, y) {
+        let totalDensity = 0;
+        for (let dy = -2; dy <= 2; dy++) {
+            for (let dx = -2; dx <= 2; dx++) {
+                if (this.isValidCell(x + dx, y + dy)) {
+                    totalDensity += this.leafDensityMap[y + dy][x + dx];
+                }
+            }
+        }
+        return totalDensity / 25;  // 25 est le nombre total de cellules vérifiées (5x5)
+    }
+
+    addLeafBorders() {
+        const borderPatterns = ['E-right', 'E-left', 'E-top', 'E-bottom'];
+        const directions = [[1, 0], [-1, 0], [0, -1], [0, 1]];
+
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                if (this.leafDensityMap[y][x] === 1) {
+                    for (let i = 0; i < directions.length; i++) {
+                        const [dx, dy] = directions[i];
+                        const newX = x + dx;
+                        const newY = y + dy;
+                        if (this.isValidCell(newX, newY) && this.leafDensityMap[newY][newX] === 0) {
+                            this.leaves.push({ x: newX, y: newY, pattern: borderPatterns[i] });
+                            this.leafDensityMap[newY][newX] = 0.7;
+                        }
                     }
                 }
             }
         }
+    }
+
+    generateMainLeafAreas() {
+        const mainPatterns = ['B', 'C', 'D', 'E-center'];
+        const clusterCount = Math.floor(this.width * this.height * CONFIG.leafDensity);
+
+        for (let i = 0; i < clusterCount; i++) {
+            const x = Math.floor(Math.random() * this.width);
+            const y = Math.floor(Math.random() * this.height);
+            if (this.maze[y][x] === 0) {
+                const pattern = mainPatterns[Math.floor(Math.random() * mainPatterns.length)];
+                this.generateLeafCluster(x, y, pattern);
+            }
+        }
+    }
+
+    generateLeafCluster(x, y, pattern, size = 3) {
+        for (let dy = 0; dy < size; dy++) {
+            for (let dx = 0; dx < size; dx++) {
+                const newX = x + dx;
+                const newY = y + dy;
+                if (this.isValidCell(newX, newY) && this.maze[newY][newX] === 0) {
+                    this.leaves.push({ x: newX, y: newY, pattern });
+                    this.leafDensityMap[newY][newX] = 1;
+                }
+            }
+        }
+    }
+
+    isValidCell(x, y) {
+        return x >= 0 && x < this.width && y >= 0 && y < this.height;
     }
 
     addPatternE(x, y) {
@@ -548,6 +615,7 @@ export class Level {
             drawPond(ctx, pond);
         }
 
+        // Dessiner les feuilles
         for (const leaf of this.leaves) {
             drawLeafPattern(ctx, leaf.pattern, leaf.x, leaf.y);
         }

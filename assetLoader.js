@@ -27,7 +27,13 @@ export const leafPatterns = {
     'X-bottomLeft': null,
     'X-bottomRight': null,
     'X-topLeft': null,
-    'X-topRight': null
+    'X-topRight': null,
+    'twoLeaves1': null,
+    'twoLeaves2': null,
+    'singleLeaveBottomLeft': null,
+    'singleLeaveBottomRight': null,
+    'singleLeaveTopLeft': null,
+    'singleLeaveTopRight': null
 };
 
 // Variables pour stocker les images des éléments du jeu
@@ -60,6 +66,7 @@ async function loadLeafPatterns() {
     const patterns = ['A', 'B', 'C', 'D'];
     const ePatterns = ['center', 'right', 'left', 'bottom', 'top'];
     const xPatterns = ['bottomLeft', 'bottomRight', 'topLeft', 'topRight'];
+    const newPatterns = ['twoLeaves1', 'twoLeaves2', 'singleLeaveBottomLeft', 'singleLeaveBottomRight', 'singleLeaveTopLeft', 'singleLeaveTopRight'];
 
     for (let pattern of patterns) {
         leafPatterns[pattern] = await loadImage(`Assets/props/feuilles/pattern${pattern}.png`);
@@ -71,6 +78,10 @@ async function loadLeafPatterns() {
 
     for (let pattern of xPatterns) {
         leafPatterns[`X-${pattern}`] = await loadImage(`Assets/props/feuilles/patternX-${pattern}.png`);
+    }
+
+    for (let pattern of newPatterns) {
+        leafPatterns[pattern] = await loadImage(`Assets/props/feuilles/${pattern}.png`);
     }
 }
 
