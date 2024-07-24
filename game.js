@@ -2,7 +2,7 @@ import { CONFIG } from './config.js';
 import { Level } from './level.js';
 import { Player } from './player.js';
 import { grassTexture } from './assetLoader.js';
-import { ProgressBar } from './ProgressBar.js';
+import { ProgressBar } from './progressBar.js';
 
 export class Game {
     constructor(canvas, ctx, playerSprites, playerShadows) {
@@ -34,7 +34,7 @@ export class Game {
 
     toggleDebugMode() {
         this.debugMode = !this.debugMode;
-        this.level.debugMode = this.debugMode;
+        this.level.setDebugMode(this.debugMode);
     }
 
     startNewGame() {
@@ -44,10 +44,9 @@ export class Game {
 
     generateNewLevel(entrancePos = null) {
         this.level = new Level(CONFIG.gridWidth, CONFIG.gridHeight, entrancePos);
-        this.level.debugMode = this.debugMode; // Propager le mode de débogage au niveau
         this.level.generate();
         
-        // Calcul optimisé de la position de départ du joueur
+        // Calculate optimized player start position
         const inset = CONFIG.cellSize * 0.1;
         const playerStartX = this.level.entrance.x === 0 ? inset : 
                              this.level.entrance.x === CONFIG.gridWidth - 1 ? (CONFIG.gridWidth - 1) * CONFIG.cellSize - inset :

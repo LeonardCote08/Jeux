@@ -75,7 +75,7 @@ async function initGame() {
         game.startNewGame();
         requestAnimationFrame(gameLoop);
     } catch (error) {
-        console.error("Erreur lors de l'initialisation du jeu:", error);
+        console.error("Error initializing the game:", error);
     }
 }
 
