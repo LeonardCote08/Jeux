@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { drawTreeBlock, drawFlower, drawPond } from './assetLoader.js';
+import { drawTreeBlock, drawFlower, drawPond, drawLeafPattern } from './assetLoader.js';
 import { PriorityQueue } from './PriorityQueue.js';
 
 const WATER_TILE_SIZE = 8;
@@ -16,6 +16,7 @@ export class Level {
         this.flowers = [];
         this.clearings = [];
         this.ponds = [];
+        this.leaves = [];
         this.minPondSize = 1;
         this.maxPondSize = 4;
         this.minPathLength = Math.floor(Math.max(width, height) * CONFIG.minPathLengthFactor);
@@ -36,6 +37,7 @@ export class Level {
         this.addRandomFlowers();
         this.addRandomPonds();
         this.removeDeadEnds();
+        this.generateLeaves();
         this.closeUnusedBorderOpenings();
     }
 
@@ -85,6 +87,54 @@ export class Level {
                     }
                 }
             }
+        }
+    }
+
+    generateLeaves() {
+        const leafPatterns = ['A', 'B', 'C', 'D', 'E', 'X'];
+        
+        for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+                if (this.maze[y][x] === 0 && Math.random() < CONFIG.leafDensity) {
+                    const pattern = leafPatterns[Math.floor(Math.random() * leafPatterns.length)];
+                    this.generateLeafCluster(x, y, pattern);
+                }
+            }
+        }
+    }
+
+    generateLeafCluster(startX, startY, pattern) {
+        const clusterSize = Math.floor(Math.random() * 3) + 2;  // Taille du cluster entre 2 et 4
+        
+        for (let y = startY; y < startY + clusterSize && y < this.height; y++) {
+            for (let x = startX; x < startX + clusterSize && x < this.width; x++) {
+                if (this.maze[y][x] === 0 && Math.random() < 0.7) {  // 70% de chance pour chaque cellule dans le cluster
+                    if (pattern === 'E') {
+                        this.addPatternE(x, y);
+                    } else if (pattern === 'X') {
+                        this.addPatternX(x, y);
+                    } else {
+                        this.leaves.push({ x, y, pattern });
+                    }
+                }
+            }
+        }
+    }
+
+    addPatternE(x, y) {
+        this.leaves.push({ x, y, pattern: 'E-center' });
+        if (x > 0) this.leaves.push({ x: x-1, y, pattern: 'E-left' });
+        if (x < this.width - 1) this.leaves.push({ x: x+1, y, pattern: 'E-right' });
+        if (y > 0) this.leaves.push({ x, y: y-1, pattern: 'E-top' });
+        if (y < this.height - 1) this.leaves.push({ x, y: y+1, pattern: 'E-bottom' });
+    }
+
+    addPatternX(x, y) {
+        if (x < this.width - 1 && y < this.height - 1) {
+            this.leaves.push({ x, y, pattern: 'X-topLeft' });
+            this.leaves.push({ x: x+1, y, pattern: 'X-topRight' });
+            this.leaves.push({ x, y: y+1, pattern: 'X-bottomLeft' });
+            this.leaves.push({ x: x+1, y: y+1, pattern: 'X-bottomRight' });
         }
     }
 
@@ -496,6 +546,10 @@ export class Level {
         // Dessiner les étangs
         for (const pond of this.ponds) {
             drawPond(ctx, pond);
+        }
+
+        for (const leaf of this.leaves) {
+            drawLeafPattern(ctx, leaf.pattern, leaf.x, leaf.y);
         }
     }
 

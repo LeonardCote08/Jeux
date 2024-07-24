@@ -14,6 +14,22 @@ export const playerShadows = {
     idleRight: [], idleLeft: [], idleUpRight: [], idleUpLeft: [], idleDownRight: [], idleDownLeft: []
 };
 
+export const leafPatterns = {
+    A: null,
+    B: null,
+    C: null,
+    D: null,
+    'E-center': null,
+    'E-right': null,
+    'E-left': null,
+    'E-bottom': null,
+    'E-top': null,
+    'X-bottomLeft': null,
+    'X-bottomRight': null,
+    'X-topLeft': null,
+    'X-topRight': null
+};
+
 // Variables pour stocker les images des éléments du jeu
 let treeImage;
 let treeShadowImage;
@@ -35,8 +51,27 @@ export async function loadAssets() {
         loadTreeImages(),
         loadFlowerImages(),
         loadGrassTexture(),
-        loadPondSidesImages()
+        loadPondSidesImages(),
+        loadLeafPatterns()
     ]);
+}
+
+async function loadLeafPatterns() {
+    const patterns = ['A', 'B', 'C', 'D'];
+    const ePatterns = ['center', 'right', 'left', 'bottom', 'top'];
+    const xPatterns = ['bottomLeft', 'bottomRight', 'topLeft', 'topRight'];
+
+    for (let pattern of patterns) {
+        leafPatterns[pattern] = await loadImage(`Assets/props/feuilles/pattern${pattern}.png`);
+    }
+
+    for (let pattern of ePatterns) {
+        leafPatterns[`E-${pattern}`] = await loadImage(`Assets/props/feuilles/patternE-${pattern}.png`);
+    }
+
+    for (let pattern of xPatterns) {
+        leafPatterns[`X-${pattern}`] = await loadImage(`Assets/props/feuilles/patternX-${pattern}.png`);
+    }
 }
 
 async function loadTreeImages() {
@@ -53,6 +88,10 @@ async function loadFlowerImages() {
     }
 }
 
+export function drawLeafPattern(ctx, pattern, x, y) {
+    const scaleFactor = CONFIG.cellSize / 8;  // 8 is the original size of leaf sprites
+    ctx.drawImage(leafPatterns[pattern], x * CONFIG.cellSize, y * CONFIG.cellSize, CONFIG.cellSize, CONFIG.cellSize);
+}
 
 async function loadPlayerSprites() {
     const walkSheet = await loadImage('Assets/player/minotaur/MinotaurWalk.png');

@@ -11,5 +11,6 @@ export const CONFIG = {
     treeHitboxSize: 28,
     minPathLengthFactor: 3.5,
     minAdditionalPathLength: 20,
-    waterTileScale: 2, // Nouvelle variable pour l'échelle des tuiles d'eau
+    waterTileScale: 2,
+    leafDensity: 0.05  // Nouvelle variable pour contrôler la densité des feuilles
 };
