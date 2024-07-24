@@ -92,15 +92,41 @@ export class Level {
     }
 
     generateLeaves() {
+        this.leafDensityMap = Array(this.height).fill().map(() => Array(this.width).fill(0));
         this.generateMainLeafAreas();
         this.addLeafBorders();
         this.addTransitionLeaves();
     }
 
+    isEmptyCell(x, y) {
+        // Vérifier si la cellule est valide et vide
+        if (!this.isValidCell(x, y) || this.maze[y][x] !== 0) {
+            return false;
+        }
+        
+        // Vérifier si la cellule fait partie de la bordure du labyrinthe
+        if (x === 0 || x === this.width - 1 || y === 0 || y === this.height - 1) {
+            return false;
+        }
+        
+        // Vérifier si la cellule est adjacente à une cellule de bordure
+        const adjacentCells = [
+            [x-1, y], [x+1, y], [x, y-1], [x, y+1]
+        ];
+        
+        for (const [adjX, adjY] of adjacentCells) {
+            if (!this.isValidCell(adjX, adjY) || this.maze[adjY][adjX] === 1) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
     addTransitionLeaves() {
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
-                if (this.leafDensityMap[y][x] === 0 && this.maze[y][x] === 0) {
+                if (this.isEmptyCell(x, y) && this.leafDensityMap[y][x] === 0) {
                     const nearbyDensity = this.getNearbyLeafDensity(x, y);
                     if (nearbyDensity > 0) {
                         const pattern = this.chooseTransitionPattern(nearbyDensity);
@@ -113,7 +139,6 @@ export class Level {
             }
         }
     }
-
     chooseTransitionPattern(density) {
         if (density > 0.4) return 'A';
         if (density > 0.2) return Math.random() < 0.5 ? 'twoLeaves1' : 'twoLeaves2';
@@ -147,7 +172,7 @@ export class Level {
                         const [dx, dy] = directions[i];
                         const newX = x + dx;
                         const newY = y + dy;
-                        if (this.isValidCell(newX, newY) && this.leafDensityMap[newY][newX] === 0) {
+                        if (this.isEmptyCell(newX, newY) && this.leafDensityMap[newY][newX] === 0) {
                             this.leaves.push({ x: newX, y: newY, pattern: borderPatterns[i] });
                             this.leafDensityMap[newY][newX] = 0.7;
                         }
@@ -164,7 +189,7 @@ export class Level {
         for (let i = 0; i < clusterCount; i++) {
             const x = Math.floor(Math.random() * this.width);
             const y = Math.floor(Math.random() * this.height);
-            if (this.maze[y][x] === 0) {
+            if (this.isEmptyCell(x, y)) {
                 const pattern = mainPatterns[Math.floor(Math.random() * mainPatterns.length)];
                 this.generateLeafCluster(x, y, pattern);
             }
@@ -176,7 +201,7 @@ export class Level {
             for (let dx = 0; dx < size; dx++) {
                 const newX = x + dx;
                 const newY = y + dy;
-                if (this.isValidCell(newX, newY) && this.maze[newY][newX] === 0) {
+                if (this.isEmptyCell(newX, newY)) {
                     this.leaves.push({ x: newX, y: newY, pattern });
                     this.leafDensityMap[newY][newX] = 1;
                 }
