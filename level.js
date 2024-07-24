@@ -94,10 +94,52 @@ export class Level {
 
     generateLeaves() {
         this.leafDensityMap = Array(this.height).fill().map(() => Array(this.width).fill(0));
-        this.generateMainLeafAreas();
+        this.leaves = [];
+        this.generateCompactLeafClusters();
         this.addMandatoryLeafBorders();
         this.addPatternX();
         this.addTransitionLeaves();
+    }
+
+    generateCompactLeafClusters() {
+        const mainPatterns = ['B', 'C', 'D', 'E-center'];
+        const clusterCount = Math.floor(this.width * this.height * CONFIG.leafDensity);
+
+        for (let i = 0; i < clusterCount; i++) {
+            const startX = Math.floor(Math.random() * this.width);
+            const startY = Math.floor(Math.random() * this.height);
+            if (this.isEmptyCell(startX, startY)) {
+                this.growLeafCluster(startX, startY, mainPatterns);
+            }
+        }
+    }
+
+    growLeafCluster(startX, startY, patterns) {
+        const queue = [{x: startX, y: startY}];
+        const clusterSize = Math.floor(Math.random() * 3) + 3; // Taille de cluster entre 3 et 5
+
+        while (queue.length > 0 && this.leaves.length < clusterSize) {
+            const {x, y} = queue.shift();
+            if (this.isEmptyCell(x, y)) {
+                const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+                this.leaves.push({x, y, pattern});
+                this.leafDensityMap[y][x] = 1;
+
+                // Ajouter les cellules adjacentes à la queue
+                this.addAdjacentCells(queue, x, y);
+            }
+        }
+    }
+
+    addAdjacentCells(queue, x, y) {
+        const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+        for (const [dx, dy] of directions) {
+            const newX = x + dx;
+            const newY = y + dy;
+            if (this.isValidCell(newX, newY) && this.isEmptyCell(newX, newY)) {
+                queue.push({x: newX, y: newY});
+            }
+        }
     }
 
     isEmptyCell(x, y) {
@@ -240,29 +282,33 @@ export class Level {
     }
 
     addMandatoryLeafBorders() {
-        const directions = [
-            { dx: 1, dy: 0, pattern: 'E-right' },
-            { dx: -1, dy: 0, pattern: 'E-left' },
-            { dx: 0, dy: -1, pattern: 'E-top' },
-            { dx: 0, dy: 1, pattern: 'E-bottom' }
-        ];
+        const borderPatterns = {
+            'right': 'E-right',
+            'left': 'E-left',
+            'top': 'E-top',
+            'bottom': 'E-bottom'
+        };
 
-        for (let y = 0; y < this.height; y++) {
-            for (let x = 0; x < this.width; x++) {
-                if (this.isMainLeafPattern(x, y)) {
-                    for (const dir of directions) {
-                        const newX = x + dir.dx;
-                        const newY = y + dir.dy;
-                        if (this.isValidCell(newX, newY) && !this.isMainLeafPattern(newX, newY)) {
-                            // Si la cellule adjacente est vide ou contient déjà un pattern E, nous le remplaçons
-                            this.removeExistingLeaf(newX, newY);
-                            this.leaves.push({ x: newX, y: newY, pattern: dir.pattern });
-                            this.leafDensityMap[newY][newX] = 0.7;
-                        }
+        const newLeaves = [];
+
+        for (const leaf of this.leaves) {
+            if (this.isMainLeafPattern(leaf.x, leaf.y)) {
+                for (const [direction, [dx, dy]] of Object.entries({
+                    'right': [1, 0],
+                    'left': [-1, 0],
+                    'top': [0, -1],
+                    'bottom': [0, 1]
+                })) {
+                    const newX = leaf.x + dx;
+                    const newY = leaf.y + dy;
+                    if (this.isValidCell(newX, newY) && !this.isMainLeafPattern(newX, newY)) {
+                        newLeaves.push({x: newX, y: newY, pattern: borderPatterns[direction]});
                     }
                 }
             }
         }
+
+        this.leaves.push(...newLeaves);
     }
 
     removeExistingLeaf(x, y) {
