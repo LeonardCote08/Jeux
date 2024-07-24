@@ -106,7 +106,7 @@ export class Level {
                         const pattern = this.chooseTransitionPattern(nearbyDensity);
                         if (pattern) {
                             this.leaves.push({ x, y, pattern });
-                            this.leafDensityMap[y][x] = 0.3;
+                            this.leafDensityMap[y][x] = pattern.startsWith('single') ? 0.1 : 0.3;
                         }
                     }
                 }
@@ -115,9 +115,9 @@ export class Level {
     }
 
     chooseTransitionPattern(density) {
-        if (density > 0.5) return 'A';
-        if (density > 0.3) return Math.random() < 0.5 ? 'twoLeaves1' : 'twoLeaves2';
-        if (density > 0.1) {
+        if (density > 0.4) return 'A';
+        if (density > 0.2) return Math.random() < 0.5 ? 'twoLeaves1' : 'twoLeaves2';
+        if (density > 0.05 && Math.random() < 0.3) {  // Réduit la probabilité d'apparition des SingleLeave
             const singleLeaves = ['singleLeaveBottomLeft', 'singleLeaveBottomRight', 'singleLeaveTopLeft', 'singleLeaveTopRight'];
             return singleLeaves[Math.floor(Math.random() * singleLeaves.length)];
         }
