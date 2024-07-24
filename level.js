@@ -103,31 +103,76 @@ export class Level {
 
     generateCompactLeafClusters() {
         const mainPatterns = ['B', 'C', 'D', 'E-center'];
-        const clusterCount = Math.floor(this.width * this.height * CONFIG.leafDensity);
+        const clusterCount = Math.floor(this.width * this.height * CONFIG.leafDensity * 0.7); // Réduire légèrement pour laisser de la place aux patternX
 
         for (let i = 0; i < clusterCount; i++) {
             const startX = Math.floor(Math.random() * this.width);
             const startY = Math.floor(Math.random() * this.height);
             if (this.isEmptyCell(startX, startY)) {
-                this.growLeafCluster(startX, startY, mainPatterns);
+                this.growRectangularLeafCluster(startX, startY, mainPatterns);
             }
         }
     }
 
-    growLeafCluster(startX, startY, patterns) {
-        const queue = [{x: startX, y: startY}];
-        const clusterSize = Math.floor(Math.random() * 3) + 3; // Taille de cluster entre 3 et 5
+    growRectangularLeafCluster(startX, startY, patterns) {
+        const clusterSizes = [
+            {width: 1, height: 1},  // 1x1
+            {width: 2, height: 1},  // 2x1
+            {width: 1, height: 2},  // 1x2
+            {width: 2, height: 2}   // 2x2
+        ];
 
-        while (queue.length > 0 && this.leaves.length < clusterSize) {
-            const {x, y} = queue.shift();
-            if (this.isEmptyCell(x, y)) {
-                const pattern = patterns[Math.floor(Math.random() * patterns.length)];
-                this.leaves.push({x, y, pattern});
-                this.leafDensityMap[y][x] = 1;
+        const chosenSize = clusterSizes[Math.floor(Math.random() * clusterSizes.length)];
+        const canPlaceCluster = this.canPlaceRectangularCluster(startX, startY, chosenSize.width, chosenSize.height);
 
-                // Ajouter les cellules adjacentes à la queue
-                this.addAdjacentCells(queue, x, y);
+        if (canPlaceCluster) {
+            for (let dy = 0; dy < chosenSize.height; dy++) {
+                for (let dx = 0; dx < chosenSize.width; dx++) {
+                    const x = startX + dx;
+                    const y = startY + dy;
+                    const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+                    this.leaves.push({x, y, pattern});
+                    this.leafDensityMap[y][x] = 1;
+                }
             }
+        }
+    }
+
+    canPlaceRectangularCluster(startX, startY, width, height) {
+        for (let dy = 0; dy < height; dy++) {
+            for (let dx = 0; dx < width; dx++) {
+                if (!this.isEmptyCell(startX + dx, startY + dy)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    growLeafCluster(startX, startY, patterns) {
+        const clusterCells = [{x: startX, y: startY}];
+        const clusterSize = Math.floor(Math.random() * 2) + 3; // Taille de cluster entre 3 et 4
+
+        while (clusterCells.length < clusterSize) {
+            const {x, y} = clusterCells[Math.floor(Math.random() * clusterCells.length)];
+            const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+            
+            for (const [dx, dy] of directions) {
+                const newX = x + dx;
+                const newY = y + dy;
+                if (this.isValidCell(newX, newY) && this.isEmptyCell(newX, newY) && !clusterCells.some(cell => cell.x === newX && cell.y === newY)) {
+                    clusterCells.push({x: newX, y: newY});
+                    if (clusterCells.length === clusterSize) break;
+                }
+            }
+            
+            if (clusterCells.length === clusterSize) break;
+        }
+
+        for (const cell of clusterCells) {
+            const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+            this.leaves.push({x: cell.x, y: cell.y, pattern});
+            this.leafDensityMap[cell.y][cell.x] = 1;
         }
     }
 
@@ -170,7 +215,7 @@ export class Level {
     addTransitionLeaves() {
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
-                if (this.isEmptyCell(x, y) && this.leafDensityMap[y][x] === 0) {
+                if (this.isEmptyCell(x, y) && !this.leaves.some(leaf => leaf.x === x && leaf.y === y)) {
                     const nearbyDensity = this.getNearbyLeafDensity(x, y);
                     if (nearbyDensity > 0) {
                         const pattern = this.chooseTransitionPattern(nearbyDensity);
@@ -302,7 +347,12 @@ export class Level {
                     const newX = leaf.x + dx;
                     const newY = leaf.y + dy;
                     if (this.isValidCell(newX, newY) && !this.isMainLeafPattern(newX, newY)) {
-                        newLeaves.push({x: newX, y: newY, pattern: borderPatterns[direction]});
+                        const existingLeaf = this.leaves.find(l => l.x === newX && l.y === newY);
+                        if (existingLeaf) {
+                            existingLeaf.pattern = borderPatterns[direction];
+                        } else {
+                            newLeaves.push({x: newX, y: newY, pattern: borderPatterns[direction]});
+                        }
                     }
                 }
             }
@@ -338,11 +388,13 @@ export class Level {
     }
 
     addPatternX() {
-        for (let y = 0; y < this.height - 1; y++) {
-            for (let x = 0; x < this.width - 1; x++) {
-                if (this.canPlacePatternX(x, y)) {
-                    this.placePatternX(x, y);
-                }
+        const patternXCount = Math.floor(this.width * this.height * CONFIG.leafDensity * 0.3); // Ajuster selon vos besoins
+
+        for (let i = 0; i < patternXCount; i++) {
+            const startX = Math.floor(Math.random() * (this.width - 1));
+            const startY = Math.floor(Math.random() * (this.height - 1));
+            if (this.canPlacePatternX(startX, startY)) {
+                this.placePatternX(startX, startY);
             }
         }
     }
@@ -350,7 +402,7 @@ export class Level {
     canPlacePatternX(x, y) {
         for (let dy = 0; dy < 2; dy++) {
             for (let dx = 0; dx < 2; dx++) {
-                if (!this.isEmptyCell(x + dx, y + dy) || this.leafDensityMap[y + dy][x + dx] !== 0) {
+                if (!this.isEmptyCell(x + dx, y + dy)) {
                     return false;
                 }
             }
@@ -360,13 +412,13 @@ export class Level {
 
     placePatternX(x, y) {
         const patterns = ['X-topLeft', 'X-topRight', 'X-bottomLeft', 'X-bottomRight'];
-        for (let i = 0; i < 2; i++) {
-            for (let j = 0; j < 2; j++) {
-                const newX = x + j;
-                const newY = y + i;
-                const patternIndex = i * 2 + j;
-                this.leaves.push({ x: newX, y: newY, pattern: patterns[patternIndex] });
-                this.leafDensityMap[newY][newX] = 0.5;
+        for (let dy = 0; dy < 2; dy++) {
+            for (let dx = 0; dx < 2; dx++) {
+                const newX = x + dx;
+                const newY = y + dy;
+                const patternIndex = dy * 2 + dx;
+                this.leaves.push({x: newX, y: newY, pattern: patterns[patternIndex]});
+                this.leafDensityMap[newY][newX] = 1;
             }
         }
     }
