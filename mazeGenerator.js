@@ -112,6 +112,8 @@ export default class MazeGenerator {
                 console.log("Valid exit found", exitPos);
                 // Assurez-vous que la case de sortie est libre
                 maze[exitPos.y][exitPos.x] = 0;
+                // Assurez-vous qu'il y a un chemin vers la sortie
+                this.ensurePathToExit(maze, exitPos);
                 return exitPos;
             }
         }
@@ -119,7 +121,42 @@ export default class MazeGenerator {
         console.warn(`Unable to find a valid exit after ${maxAttempts} attempts. Using the last generated position.`);
         // Assurez-vous que la dernière position générée est libre
         maze[exitPos.y][exitPos.x] = 0;
+        this.ensurePathToExit(maze, exitPos);
         return exitPos;
+    }
+
+    ensurePathToExit(maze, exit) {
+        const directions = [
+            {dx: -1, dy: 0}, {dx: 1, dy: 0},
+            {dx: 0, dy: -1}, {dx: 0, dy: 1},
+            {dx: -1, dy: -1}, {dx: 1, dy: -1},
+            {dx: -1, dy: 1}, {dx: 1, dy: 1}
+        ];
+
+        // Trouver la direction vers l'intérieur du labyrinthe
+        let inwardDirection;
+        if (exit.x === 0) inwardDirection = {dx: 1, dy: 0};
+        else if (exit.x === this.width - 1) inwardDirection = {dx: -1, dy: 0};
+        else if (exit.y === 0) inwardDirection = {dx: 0, dy: 1};
+        else inwardDirection = {dx: 0, dy: -1};
+
+        // Créer un chemin direct vers l'intérieur
+        let newX = exit.x + inwardDirection.dx;
+        let newY = exit.y + inwardDirection.dy;
+        if (this.isValid(newX, newY)) {
+            maze[newY][newX] = 0;
+
+            // Élargir le chemin en éliminant les arbres adjacents
+            for (const dir of directions) {
+                const adjX = newX + dir.dx;
+                const adjY = newY + dir.dy;
+                if (this.isValid(adjX, adjY) && !this.isBorderCell(adjX, adjY)) {
+                    maze[adjY][adjX] = 0;
+                }
+            }
+        }
+
+        console.log(`Path created for exit at (${exit.x}, ${exit.y})`);
     }
 
     isValidExit(exitPos, entrance, maze) {
@@ -233,15 +270,56 @@ export default class MazeGenerator {
 
     finalizeLevel(maze, entrance, exit) {
         this.closeUnusedBorderOpenings(maze, entrance, exit);
+        
         // Assurez-vous que l'entrée et la sortie sont toujours ouvertes
         maze[entrance.y][entrance.x] = 0;
         maze[exit.y][exit.x] = 0;
+        
+        // Créer des chemins d'accès pour l'entrée et la sortie
+        this.ensurePathToExit(maze, entrance);
+        this.ensurePathToExit(maze, exit);
+
+        console.log("Level finalized with guaranteed access to entrance and exit");
     }
 
     generateTreeTypes() {
         return Array.from({ length: this.height }, () => 
             Array.from({ length: this.width }, () => Math.random() < 0.15 ? 'apple' : 'normal')
         );
+    }
+
+    forcePathToExit(maze, exit) {
+        const directions = [
+            {dx: -1, dy: 0}, {dx: 1, dy: 0},
+            {dx: 0, dy: -1}, {dx: 0, dy: 1}
+        ];
+
+        for (const {dx, dy} of directions) {
+            const newX = exit.x + dx;
+            const newY = exit.y + dy;
+            if (this.isValid(newX, newY) && !this.isBorderCell(newX, newY)) {
+                maze[newY][newX] = 0;  // Force un chemin
+                return;
+            }
+        }
+    }
+
+    isExitBlocked(maze, exit) {
+        const directions = [
+            {dx: -1, dy: 0}, {dx: 1, dy: 0},
+            {dx: 0, dy: -1}, {dx: 0, dy: 1},
+            {dx: -1, dy: -1}, {dx: 1, dy: -1},
+            {dx: -1, dy: 1}, {dx: 1, dy: 1}
+        ];
+
+        for (const {dx, dy} of directions) {
+            const newX = exit.x + dx;
+            const newY = exit.y + dy;
+            if (this.isValid(newX, newY) && !this.isBorderCell(newX, newY) && maze[newY][newX] === 0) {
+                return false;  // Il existe un chemin non bloqué
+            }
+        }
+        return true;  // Tous les chemins sont bloqués
     }
 
     generateFlowers(maze) {
